@@ -8,11 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QuickActionGrid } from "@/components/QuickActionGrid";
 import { PhotoUpload } from "@/components/PhotoUpload";
-import { QUICK_ACTIONS, Visit } from "@/types";
+import { QUICK_ACTIONS, Visit, CustomerStats } from "@/types";
 import { saveVisit, getVisits } from "@/lib/storage";
 import { ChevronLeft, Save, ShoppingCart, User, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "@/app/contexts/UserContext";
+import { getCustomerStatsAction } from "@/app/actions";
 
 export default function NewVisitPage() {
     const router = useRouter();
@@ -45,18 +46,24 @@ export default function NewVisitPage() {
         }));
     }, []);
 
+    const [serverStats, setServerStats] = useState<CustomerStats[]>([]);
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
 
-    // Load pharmacy names for predictor
+    // Load pharmacy names for predictor from Server (Global History)
     useEffect(() => {
-        const loadSuggestions = () => {
-            const visits = getVisits();
-            const names = Array.from(new Set(visits.map(v => v.pharmacyName.trim()))).filter(Boolean);
-            setSuggestions(names);
+        const loadGlobalStats = async () => {
+            // Fetch stats based on user's area code (or "All" if admin)
+            // This ensures they see relevant suggestions
+            const result = await getCustomerStatsAction(user?.areaCode || "");
+            if (result.success && result.data) {
+                setServerStats(result.data);
+                const names = result.data.map(s => s.pharmacyName).sort();
+                setSuggestions(names);
+            }
         };
-        loadSuggestions();
-    }, []);
+        loadGlobalStats();
+    }, [user?.areaCode]);
 
     // Pre-fill area code from user profile
     useEffect(() => {
@@ -72,11 +79,26 @@ export default function NewVisitPage() {
     };
 
     const selectSuggestion = (name: string) => {
-        setFormData(prev => ({ ...prev, pharmacyName: name }));
+        const stat = serverStats.find(s => s.pharmacyName === name);
+
+        setFormData(prev => ({
+            ...prev,
+            pharmacyName: name,
+            // Smart Area Code: Auto-fill from server data
+            areaCode: stat?.areaCode || prev.areaCode,
+            // Pre-fill contact if available
+            customerContact: stat?.lastContact || prev.customerContact
+        }));
         setShowSuggestions(false);
-        // Trigger blur logic to auto-fill contact/area code if we implement that map later
-        // For now just setting the name is enough, the existing onBlur will handle contact pre-fill
     };
+
+    // Calculate if we need to restrict the dropdown
+    // If pharmacy is NOT in our list (New Customer) AND User has specific area codes (Not "All")
+    const isNewCustomer = formData.pharmacyName && !serverStats.some(s => s.pharmacyName.toLowerCase() === (formData.pharmacyName || "").toLowerCase());
+    const userAreaOptions = user?.areaCode && user.areaCode !== "All"
+        ? user.areaCode.split(',').map(s => s.trim()).filter(Boolean)
+        : [];
+    const showRestrictedDropdown = isNewCustomer && userAreaOptions.length > 0;
 
     const handlePharmacyBlur = () => {
         if (!formData.pharmacyName) return;
@@ -225,13 +247,28 @@ export default function NewVisitPage() {
                         <div>
                             <label className="text-sm font-medium text-slate-700 block mb-1">Area Code</label>
                             <div className="relative">
-                                <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                                <Input
-                                    placeholder="e.g. 1A, 2A"
-                                    value={formData.areaCode || ""}
-                                    onChange={(e) => setFormData({ ...formData, areaCode: e.target.value })}
-                                    className="pl-9"
-                                />
+                                <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 z-10" />
+
+                                {showRestrictedDropdown ? (
+                                    <select
+                                        className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white pl-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950"
+                                        value={formData.areaCode || ""}
+                                        onChange={(e) => setFormData({ ...formData, areaCode: e.target.value })}
+                                        required
+                                    >
+                                        <option value="" disabled>Select Area</option>
+                                        {userAreaOptions.map(code => (
+                                            <option key={code} value={code}>{code}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <Input
+                                        placeholder="e.g. 1A, 2A"
+                                        value={formData.areaCode || ""}
+                                        onChange={(e) => setFormData({ ...formData, areaCode: e.target.value })}
+                                        className="pl-9"
+                                    />
+                                )}
                             </div>
                         </div>
 

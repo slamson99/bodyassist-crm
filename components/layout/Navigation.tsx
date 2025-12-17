@@ -43,7 +43,16 @@ export function Header() {
                         </Button>
                     </Link>
                     <div className="h-6 w-px bg-slate-200 mx-2" />
-                    <Button variant="ghost" size="sm" onClick={() => logout()} className="text-red-600 hover:text-red-700 hover:bg-red-50 gap-2">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                            if (window.confirm("Are you sure you want to logout?")) {
+                                logout();
+                            }
+                        }}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 gap-2"
+                    >
                         <LogOut size={16} />
                         Logout
                     </Button>
@@ -65,7 +74,9 @@ export function BottomNav() {
     const { logout } = useUser();
 
     const handleLogout = () => {
-        logout();
+        if (window.confirm("Are you sure you want to logout?")) {
+            logout();
+        }
     };
 
     return (

@@ -63,6 +63,7 @@ export default function LoginPage() {
                     </div>
                     <CardTitle className="text-2xl font-bold text-slate-800">Bodyassist CRM</CardTitle>
                     <CardDescription>Enter your PIN to access the portal</CardDescription>
+                    <p className="text-[10px] text-slate-400 mt-1">Version 1.1</p>
                 </CardHeader>
                 <CardContent>
                     {/* PIN Display */}
@@ -71,8 +72,8 @@ export default function LoginPage() {
                             <div
                                 key={i}
                                 className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${i < pin.length
-                                        ? "bg-blue-600 border-blue-600 scale-110"
-                                        : "bg-transparent border-slate-300"
+                                    ? "bg-blue-600 border-blue-600 scale-110"
+                                    : "bg-transparent border-slate-300"
                                     }`}
                             />
                         ))}
