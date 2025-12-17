@@ -10,7 +10,8 @@ interface PhotoUploadProps {
 }
 
 export function PhotoUpload({ onPhotoSelect, currentPhoto }: PhotoUploadProps) {
-    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const cameraInputRef = React.useRef<HTMLInputElement>(null);
+    const galleryInputRef = React.useRef<HTMLInputElement>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -25,27 +26,52 @@ export function PhotoUpload({ onPhotoSelect, currentPhoto }: PhotoUploadProps) {
 
     return (
         <div className="w-full">
+            {/* Camera Input (Forces Camera on Mobile) */}
             <input
                 type="file"
                 accept="image/*"
                 capture="environment"
                 className="hidden"
-                ref={fileInputRef}
+                ref={cameraInputRef}
+                onChange={handleFileChange}
+            />
+
+            {/* Gallery Input (Allows File Selection) */}
+            <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                ref={galleryInputRef}
                 onChange={handleFileChange}
             />
 
             {!currentPhoto ? (
-                <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-xl border-slate-300 bg-slate-50 transition-colors hover:bg-slate-100 hover:border-primary/50"
-                >
-                    <div className="p-3 bg-white rounded-full shadow-sm mb-3">
-                        <Camera className="w-6 h-6 text-primary" />
-                    </div>
-                    <span className="text-sm font-medium text-slate-600">Take a photo</span>
-                    <span className="text-xs text-slate-400 mt-1">or select from library</span>
-                </button>
+                <div className="grid grid-cols-2 gap-3 h-32">
+                    {/* Take Photo Button */}
+                    <button
+                        type="button"
+                        onClick={() => cameraInputRef.current?.click()}
+                        className="flex flex-col items-center justify-center h-full border-2 border-dashed rounded-xl border-slate-300 bg-slate-50 transition-all active:scale-95 hover:bg-blue-50 hover:border-blue-200"
+                    >
+                        <div className="p-3 bg-white rounded-full shadow-sm mb-2 text-blue-500">
+                            <Camera className="w-6 h-6" />
+                        </div>
+                        <span className="text-sm font-medium text-slate-700">Take Photo</span>
+                    </button>
+
+                    {/* Upload Button */}
+                    <button
+                        type="button"
+                        onClick={() => galleryInputRef.current?.click()}
+                        className="flex flex-col items-center justify-center h-full border-2 border-dashed rounded-xl border-slate-300 bg-slate-50 transition-all active:scale-95 hover:bg-slate-100"
+                    >
+                        <div className="p-3 bg-white rounded-full shadow-sm mb-2 text-slate-500">
+                            {/* Simple Upload Icon */}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" x2="12" y1="3" y2="15" /></svg>
+                        </div>
+                        <span className="text-sm font-medium text-slate-700">Upload File</span>
+                    </button>
+                </div>
             ) : (
                 <div className="relative w-full h-48 rounded-xl overflow-hidden shadow-sm border bg-black">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
