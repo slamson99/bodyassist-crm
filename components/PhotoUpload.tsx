@@ -13,14 +13,24 @@ export function PhotoUpload({ onPhotoSelect, currentPhoto }: PhotoUploadProps) {
     const cameraInputRef = React.useRef<HTMLInputElement>(null);
     const galleryInputRef = React.useRef<HTMLInputElement>(null);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                onPhotoSelect(reader.result as string);
-            };
-            reader.readAsDataURL(file);
+            try {
+                // Dynamically import to ensure client-side execution if needed, 
+                // though this is a client component anyway.
+                const { compressImage } = await import('@/lib/utils');
+                const compressedDataUrl = await compressImage(file);
+                onPhotoSelect(compressedDataUrl);
+            } catch (error) {
+                console.error("Compression failed:", error);
+                // Fallback to original if compression fails (though risky for size)
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    onPhotoSelect(reader.result as string);
+                };
+                reader.readAsDataURL(file);
+            }
         }
     };
 
