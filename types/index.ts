@@ -20,7 +20,7 @@ export const QUICK_ACTIONS = [
     "Order Taken",
     "Complaint Handling",
     "Relationship Building",
-    "Drop off Promo",
+    "Phone Call",
     "Cold Call",
 ];
 

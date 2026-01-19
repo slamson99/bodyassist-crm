@@ -90,7 +90,14 @@ export default function CustomersPage() {
 
     const filteredStats = stats.filter(s => {
         const matchesSearch = s.pharmacyName.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesArea = !areaSearch || (s.areaCode && s.areaCode.toLowerCase().includes(areaSearch.toLowerCase()));
+
+        // Area Code: Exact match (case insensitive), trimmed.
+        // If s.areaCode is "2A, 2B" (multi-area), we check if search term is ONE of them?
+        // User request: "if i use 2A, only show 2A".
+        // Use logic: if areaSearch is present, it must EQUAL the Area Code (or one of them).
+        const cleanAreaSearch = areaSearch.trim().toLowerCase();
+        const matchesArea = !cleanAreaSearch || (s.areaCode && s.areaCode.toLowerCase().trim() === cleanAreaSearch);
+
         const matchesRating = filterRating === "All" || s.leadRating === filterRating;
 
         return matchesSearch && matchesArea && matchesRating;
