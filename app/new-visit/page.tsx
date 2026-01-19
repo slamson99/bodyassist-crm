@@ -128,7 +128,8 @@ export default function NewVisitPage() {
             id: crypto.randomUUID(),
             pharmacyName: formData.pharmacyName!,
             customerContact: formData.customerContact,
-            timestamp: formData.timestamp || new Date().toISOString(),
+            // Convert local input time to ISO UTC string to prevent server timezone mismatch
+            timestamp: formData.timestamp ? new Date(formData.timestamp).toISOString() : new Date().toISOString(),
             actions: formData.actions || [],
             hasOrder: formData.hasOrder || false,
             orderDetails: formData.orderDetails || "",
