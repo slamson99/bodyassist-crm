@@ -7,16 +7,17 @@ const CLEANUP_THRESHOLD = STORAGE_LIMIT * 0.9;
 // Target Safety Level (850MB) - clear down to this to avoid constant churning
 const TARGET_SIZE = STORAGE_LIMIT * 0.85;
 
-export async function uploadImageToBlob(base64Data: string, filename: string): Promise<string | null> {
+export async function uploadImageToBlob(base64Data: string, filename: string): Promise<string> {
     const token = process.env.BLOB_READ_WRITE_TOKEN;
     if (!token) {
         console.error("Missing BLOB_READ_WRITE_TOKEN");
-        return null;
+        throw new Error("Server configuration error: Missing Blob Token");
     }
 
     // 1. Convert base64
     const base64Image = base64Data.split(';base64,').pop();
-    if (!base64Image) return null;
+    if (!base64Image) throw new Error("Invalid image data");
+
     const buffer = Buffer.from(base64Image, 'base64');
 
     try {
@@ -34,7 +35,7 @@ export async function uploadImageToBlob(base64Data: string, filename: string): P
         return blob.url;
     } catch (error) {
         console.error("Vercel Blob Upload Error:", error);
-        return null;
+        throw new Error(`Blob upload failed: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
 }
 

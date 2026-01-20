@@ -52,13 +52,10 @@ export async function uploadPhotoAction(base64Data: string, filename: string) {
         const { uploadImageToBlob } = await import('@/lib/vercel');
         const url = await uploadImageToBlob(base64Data, filename);
 
-        if (url) {
-            return { success: true, url };
-        }
-        return { success: false, error: "Upload failed" };
+        return { success: true, url };
     } catch (error) {
-        console.error(error);
-        return { success: false, error: "Upload failed" };
+        console.error("Upload Action Error:", error);
+        return { success: false, error: error instanceof Error ? error.message : "Upload failed" };
     }
 }
 

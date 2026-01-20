@@ -204,7 +204,9 @@ function NewVisitContent() {
                 if (uploadResult.success && uploadResult.url) {
                     visitData.photoUrl = uploadResult.url;
                 } else {
-                    visitData.photoUrl = "Image Upload Failed";
+                    setLoading(false);
+                    alert(`Photo upload failed: ${uploadResult.error || "Unknown error"}`);
+                    return; // Stop submission so user can fix
                 }
             }
 
