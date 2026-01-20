@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Calendar, Clock, MapPin, Phone, User, ShoppingBag, X, Pencil, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, Phone, User, ShoppingBag, X, Pencil, Check, Loader2, MoreVertical, Edit } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,16 @@ import { Input } from "@/components/ui/input";
 import { getVisits, saveVisit } from "@/lib/storage";
 import { Visit } from "@/types";
 import { cn } from "@/lib/utils";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import Link from "next/link";
 
 export default function CustomerDetailsPage() {
+    // ... existing setup ...
     const router = useRouter();
     const params = useParams();
     // Safely handle string or array from useParams
@@ -248,9 +256,29 @@ export default function CustomerDetailsPage() {
                                             <Calendar size={16} />
                                             <span className="text-sm font-medium">{format(new Date(visit.timestamp), "MMM d, yyyy")}</span>
                                         </div>
-                                        <div className="flex items-center space-x-1 text-slate-400 text-xs">
-                                            <Clock size={14} />
-                                            <span>{format(new Date(visit.timestamp), "h:mm a")}</span>
+
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center space-x-1 text-slate-400 text-xs">
+                                                <Clock size={14} />
+                                                <span>{format(new Date(visit.timestamp), "h:mm a")}</span>
+                                            </div>
+
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                                        <span className="sr-only">Open menu</span>
+                                                        <MoreVertical className="h-4 w-4 text-slate-500" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <Link href={`/new-visit?id=${visit.id}`}>
+                                                        <DropdownMenuItem>
+                                                            <Edit className="mr-2 h-4 w-4" />
+                                                            <span>Edit Visit</span>
+                                                        </DropdownMenuItem>
+                                                    </Link>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                     </div>
                                 </CardHeader>

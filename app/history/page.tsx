@@ -34,46 +34,49 @@ export default function HistoryPage() {
                     </div>
                 ) : (
                     visits.map((visit) => (
-                        <Card key={visit.id} className="overflow-hidden border-none shadow-sm">
-                            <CardContent className="p-0">
-                                <div className="p-4 bg-white">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className="font-bold text-slate-800 text-lg">{visit.pharmacyName}</h3>
-                                        <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-1 rounded-md">
-                                            {format(new Date(visit.timestamp), "MMM d, HH:mm")}
-                                        </span>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-2 mb-3">
-                                        {visit.actions.map(action => (
-                                            <span key={action} className="text-xs border border-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
-                                                {action}
+                        <Link href={`/customers/${encodeURIComponent(visit.pharmacyName)}`} key={visit.id}>
+                            <Card className="overflow-hidden border-none shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                                <CardContent className="p-0">
+                                    <div className="p-4 bg-white">
+                                        {/* ... content ... */}
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h3 className="font-bold text-slate-800 text-lg">{visit.pharmacyName}</h3>
+                                            <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-1 rounded-md">
+                                                {format(new Date(visit.timestamp), "MMM d, HH:mm")}
                                             </span>
-                                        ))}
-                                    </div>
-
-                                    {(visit.hasOrder || visit.photoUrl || visit.notes) && (
-                                        <div className="border-t border-slate-50 pt-3 mt-3 flex gap-4 text-sm text-slate-500">
-                                            {visit.hasOrder && (
-                                                <div className="flex items-center text-green-600 font-medium">
-                                                    <ShoppingBag size={14} className="mr-1" /> Order
-                                                </div>
-                                            )}
-                                            {visit.photoUrl && (
-                                                <div className="flex items-center text-blue-600 font-medium">
-                                                    <MapPin size={14} className="mr-1" /> Photo
-                                                </div>
-                                            )}
-                                            {visit.notes && (
-                                                <div className="truncate flex-1 max-w-[150px]">
-                                                    "{visit.notes}"
-                                                </div>
-                                            )}
                                         </div>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
+
+                                        <div className="flex flex-wrap gap-2 mb-3">
+                                            {visit.actions.map(action => (
+                                                <span key={action} className="text-xs border border-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
+                                                    {action}
+                                                </span>
+                                            ))}
+                                        </div>
+
+                                        {(visit.hasOrder || visit.photoUrl || visit.notes) && (
+                                            <div className="border-t border-slate-50 pt-3 mt-3 flex gap-4 text-sm text-slate-500">
+                                                {visit.hasOrder && (
+                                                    <div className="flex items-center text-green-600 font-medium">
+                                                        <ShoppingBag size={14} className="mr-1" /> Order
+                                                    </div>
+                                                )}
+                                                {visit.photoUrl && (
+                                                    <div className="flex items-center text-blue-600 font-medium">
+                                                        <MapPin size={14} className="mr-1" /> Photo
+                                                    </div>
+                                                )}
+                                                {visit.notes && (
+                                                    <div className="truncate flex-1 max-w-[150px]">
+                                                        "{visit.notes}"
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </Link>
                     ))
                 )}
             </div>

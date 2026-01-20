@@ -71,6 +71,52 @@ export async function updateAreaCodeAction(visitId: string, newAreaCode: string)
     return { success: false, error: result.error };
 }
 
+export async function getVisitByIdAction(visitId: string) {
+    try {
+        const { getVisitById } = await import('@/lib/google');
+        const visit = await getVisitById(visitId);
+        if (visit) {
+            return { success: true, visit };
+        }
+        return { success: false, error: "Visit not found" };
+    } catch (err) {
+        console.error("Get Visit Error:", err);
+        return { success: false, error: "Failed to fetch visit" };
+    }
+}
+
+export async function updateVisitAction(visit: Visit) {
+    try {
+        const { updateVisitRow } = await import('@/lib/google');
+        const result = await updateVisitRow(visit);
+        if (result.success) {
+            revalidatePath('/');
+            revalidatePath('/customers');
+            return { success: true };
+        }
+        return { success: false, error: result.error || "Update failed" };
+    } catch (err) {
+        console.error("Update Action Error:", err);
+        return { success: false, error: "Update failed" };
+    }
+}
+
+export async function deleteVisitAction(visitId: string) {
+    try {
+        const { deleteVisitRow } = await import('@/lib/google');
+        const result = await deleteVisitRow(visitId);
+        if (result.success) {
+            revalidatePath('/');
+            revalidatePath('/customers');
+            return { success: true };
+        }
+        return { success: false, error: result.error || "Delete failed" };
+    } catch (err) {
+        console.error("Delete Action Error:", err);
+        return { success: false, error: "Delete failed" };
+    }
+}
+
 import { CustomerStats } from '@/types';
 
 export async function getCustomerStatsAction(userAreaCode: string, filterUser?: string) {

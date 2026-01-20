@@ -205,6 +205,119 @@ export async function fetchVisitsFromSheet(): Promise<Visit[]> {
     }
 }
 
+export async function getVisitById(visitId: string): Promise<Visit | null> {
+    const visits = await fetchVisitsFromSheet();
+    return visits.find(v => v.id === visitId) || null;
+}
+
+export async function updateVisitRow(visit: Visit) {
+    try {
+        const sheets = await getSheetsClient();
+        if (!sheets) throw new Error("Missing Google Credentials");
+        const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+
+        // 1. Find the row number for the ID
+        const response = await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range: 'Sheet1!A:A',
+        });
+
+        const rows = response.data.values;
+        if (!rows) throw new Error("No data found");
+
+        const rowIndex = rows.findIndex(row => row[0] === visit.id);
+        if (rowIndex === -1) throw new Error("Visit ID not found");
+
+        const sheetRow = rowIndex + 1;
+        const range = `Sheet1!A${sheetRow}:L${sheetRow}`; // Update entire row
+
+        // Helper to flatten safely
+        const rowData = [
+            visit.id,
+            visit.timestamp,
+            visit.pharmacyName,
+            visit.customerContact || "",
+            visit.actions.join(", "),
+            visit.hasOrder ? "Yes" : "No",
+            visit.orderDetails || "",
+            visit.photoUrl || "",
+            visit.notes,
+            visit.leadRating || "",
+            visit.areaCode || "",
+            visit.user || ""
+        ];
+
+        await sheets.spreadsheets.values.update({
+            spreadsheetId,
+            range,
+            valueInputOption: 'USER_ENTERED',
+            requestBody: {
+                values: [rowData],
+            },
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating visit row:", error);
+        return { success: false, error: "Failed to update visit" };
+    }
+}
+
+export async function deleteVisitRow(visitId: string) {
+    try {
+        const sheets = await getSheetsClient();
+        if (!sheets) throw new Error("Missing Google Credentials");
+        const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+
+        // 1. Find Row
+        const response = await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range: 'Sheet1!A:A',
+        });
+
+        const rows = response.data.values;
+        if (!rows) throw new Error("No data found");
+
+        const rowIndex = rows.findIndex(row => row[0] === visitId);
+        if (rowIndex === -1) throw new Error("Visit ID not found");
+
+        // 2. Delete the row
+        // To delete a row properly (shifting up), we need batchUpdate
+        // rowIndex is 0-indexed relative to response.
+        // We need grid properties. Assuming Sheet1 is 0 id (usually).
+        // But safer to just CLEAR the content if we don't want to mess with indices?
+        // User asked to "Remove it from the data".
+        // Deleting is better. We need the sheetId (integer), not spreadsheetId (string).
+
+        // Fetch sheet metadata to get sheetId
+        const meta = await sheets.spreadsheets.get({ spreadsheetId });
+        const sheet = meta.data.sheets?.find(s => s.properties?.title === 'Sheet1');
+        if (!sheet?.properties?.sheetId) throw new Error("Sheet1 not found");
+        const sheetId = sheet.properties.sheetId; // This is the integer ID (e.g. 0)
+
+        await sheets.spreadsheets.batchUpdate({
+            spreadsheetId,
+            requestBody: {
+                requests: [{
+                    deleteDimension: {
+                        range: {
+                            sheetId: sheetId,
+                            dimension: 'ROWS',
+                            startIndex: rowIndex, // 0-based inclusive
+                            endIndex: rowIndex + 1 // exclusive
+                        }
+                    }
+                }]
+            }
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error deleting visit row:", error);
+        return { success: false, error: "Failed to delete visit" };
+    }
+}
+
 export async function updateVisitAreaCode(visitId: string, newAreaCode: string) {
     try {
         const sheets = await getSheetsClient();
