@@ -8,12 +8,14 @@ const CLEANUP_THRESHOLD = STORAGE_LIMIT * 0.9;
 const TARGET_SIZE = STORAGE_LIMIT * 0.85;
 
 export async function uploadImageToBlob(base64Data: string, filename: string): Promise<string> {
-    const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+    // Clean token: remove whitespace and surrounding quotes (common copy-paste error)
+    const token = process.env.BLOB_READ_WRITE_TOKEN?.trim().replace(/^["']|["']$/g, '');
+
     if (!token) {
         console.error("Missing BLOB_READ_WRITE_TOKEN");
         throw new Error("Server configuration error: Missing Blob Token");
     }
-    console.log("Using Blob Token starting with:", token.substring(0, 4) + "...");
+    console.log("Using Blob Token starting with:", token.substring(0, 15) + "...");
 
     // 1. Convert base64
     const base64Image = base64Data.split(';base64,').pop();
