@@ -13,22 +13,16 @@ import { useUser } from "./contexts/UserContext";
 export default function Home() {
   const { user } = useUser();
   const [visits, setVisits] = useState<Visit[]>([]);
-  const [pendingVisits, setPendingVisits] = useState<{
-    urgent: CustomerStats[], // > 6 months
-    warning: CustomerStats[], // > 3 months
-    soon: CustomerStats[],    // > 1 month
-  }>({ urgent: [], warning: [], soon: [] });
-
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [groupedPending, setGroupedPending] = useState<Record<string, { urgent: CustomerStats[], warning: CustomerStats[], soon: CustomerStats[] }>>({});
+  const [hasPending, setHasPending] = useState(false);
 
   useEffect(() => {
-    // ... existing useEffect ...
     const loadDashboard = async () => {
       // Local visits for recent activity
       setVisits(getVisits());
 
       // Fetch Global Stats for Pending List
-      // Only fetch if user has area code
       if (user?.areaCode) {
         try {
           const { getCustomerStatsAction } = await import('@/app/actions');
@@ -38,33 +32,38 @@ export default function Home() {
             const stats = result.data;
             const now = new Date();
 
-            // Grouping Logic
-            const urgent: CustomerStats[] = [];
-            const warning: CustomerStats[] = [];
-            const soon: CustomerStats[] = [];
+            const byArea: Record<string, { urgent: CustomerStats[], warning: CustomerStats[], soon: CustomerStats[] }> = {};
+            let count = 0;
 
             stats.forEach(s => {
               const lastVisit = new Date(s.lastVisit);
-              // Only include if Area matches user's filter (Server action handles this mostly, but double check)
-              // "All" handled by server.
+              const area = s.areaCode || "Unassigned";
+
+              if (!byArea[area]) byArea[area] = { urgent: [], warning: [], soon: [] };
 
               if (isBefore(lastVisit, addMonths(now, -6))) {
-                urgent.push(s);
+                byArea[area].urgent.push(s);
+                count++;
               } else if (isBefore(lastVisit, addMonths(now, -3))) {
-                warning.push(s);
+                byArea[area].warning.push(s);
+                count++;
               } else if (isBefore(lastVisit, addMonths(now, -1))) {
-                soon.push(s);
+                byArea[area].soon.push(s);
+                count++;
               }
             });
 
-            // Sort by longest overdue inside each group
+            // Sort within buckets
             const sortFn = (a: CustomerStats, b: CustomerStats) => new Date(a.lastVisit).getTime() - new Date(b.lastVisit).getTime();
 
-            setPendingVisits({
-              urgent: urgent.sort(sortFn),
-              warning: warning.sort(sortFn),
-              soon: soon.sort(sortFn),
+            Object.keys(byArea).forEach(area => {
+              byArea[area].urgent.sort(sortFn);
+              byArea[area].warning.sort(sortFn);
+              byArea[area].soon.sort(sortFn);
             });
+
+            setGroupedPending(byArea);
+            setHasPending(count > 0);
           }
         } catch (err) {
           console.error("Dashboard Stats Error:", err);
@@ -78,75 +77,122 @@ export default function Home() {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const renderPendingList = (list: CustomerStats[], colorDetails: { bg: string, text: string, icon: any, label: string }) => {
-    if (list.length === 0) return null;
+  const renderPendingVisits = () => {
+    if (!hasPending) return null;
 
-    // Group by Area Code nicely
-    const byArea: Record<string, CustomerStats[]> = {};
-    list.forEach(item => {
-      const area = item.areaCode || "Unassigned";
-      if (!byArea[area]) byArea[area] = [];
-      byArea[area].push(item);
-    });
-
-    const sortedAreas = Object.keys(byArea).sort();
-    const sectionId = colorDetails.label.replace(/\s+/g, '-').toLowerCase();
+    const areas = Object.keys(groupedPending).sort();
 
     return (
-      <div className="space-y-4 mb-6">
-        <div className={`flex items-center gap-2 text-sm font-bold uppercase tracking-wider ${colorDetails.text} mb-2`}>
-          <colorDetails.icon size={16} />
-          {colorDetails.label} ({list.length})
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            Pending Visits
+          </h3>
         </div>
-        {sortedAreas.map(area => {
-          const uniqueKey = `${sectionId}-${area}`;
-          const isExpanded = expandedSections[uniqueKey];
-          const areaList = byArea[area];
-          const displayList = isExpanded ? areaList : areaList.slice(0, 3);
-          const hasMore = areaList.length > 3;
 
-          return (
-            <div key={area} className="space-y-2">
-              {sortedAreas.length > 1 && <div className="text-xs font-semibold text-slate-400 pl-1">Area {area}</div>}
+        <div className="space-y-6">
+          {areas.map(area => {
+            const { urgent, warning, soon } = groupedPending[area];
+            const totalForArea = urgent.length + warning.length + soon.length;
+            if (totalForArea === 0) return null;
 
-              {displayList.map(cust => (
-                <Link href={`/customers/${encodeURIComponent(cust.pharmacyName)}`} key={cust.pharmacyName}>
-                  <Card className="mb-2 border-l-4 hover:shadow-md transition-all cursor-pointer group" style={{ borderLeftColor: colorDetails.text === 'text-red-600' ? '#dc2626' : colorDetails.text === 'text-orange-500' ? '#f97316' : '#eab308' }}>
-                    <div className="p-3 flex justify-between items-center">
-                      <div>
-                        <h4 className="font-semibold text-slate-800 text-sm group-hover:text-primary transition-colors">{cust.pharmacyName}</h4>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                          <div className="flex items-center gap-1">
-                            <Clock size={10} />
-                            <span>{formatDistanceToNow(new Date(cust.lastVisit), { addSuffix: true })}</span>
-                          </div>
-                          {cust.lastContact && cust.lastContact !== "Unknown" && (
-                            <div className="flex items-center gap-1">
-                              <User size={10} />
-                              <span>{cust.lastContact}</span>
+            const isExpanded = expandedSections[area];
+
+            // Flatten for preview (Priority: Urgent -> Warning -> Soon)
+            const allInOrder = [...urgent, ...warning, ...soon];
+            const previewList = allInOrder.slice(0, 3);
+            const showExpand = allInOrder.length > 3;
+
+            return (
+              <div key={area} className="bg-slate-50 rounded-xl p-4 border border-slate-100 dark:bg-slate-900/50">
+                <div className="flex items-center gap-2 mb-3">
+                  <h4 className="font-bold text-slate-700 uppercase tracking-wider text-sm flex items-center gap-2">
+                    <MapPin size={16} /> Area {area}
+                  </h4>
+                  <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs font-bold">{totalForArea}</span>
+                </div>
+
+                {/* Render Content */}
+                {isExpanded ? (
+                  <div className="space-y-4">
+                    {/* Sub Categories when Expanded */}
+                    {urgent.length > 0 && renderCategoryBlock(urgent, "Over 6 Months", "bg-red-500", "text-red-600", AlertCircle)}
+                    {warning.length > 0 && renderCategoryBlock(warning, "Over 3 Months", "bg-orange-500", "text-orange-500", Clock)}
+                    {soon.length > 0 && renderCategoryBlock(soon, "Over 1 Month", "bg-yellow-500", "text-yellow-600", Clock)}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {/* Mixed List for Preview */}
+                    {previewList.map(cust => {
+                      // Determine style based on which bucket it is in
+                      let colorClass = "border-l-yellow-500";
+                      if (urgent.includes(cust)) colorClass = "border-l-red-600";
+                      else if (warning.includes(cust)) colorClass = "border-l-orange-500";
+
+                      return (
+                        <Link href={`/customers/${encodeURIComponent(cust.pharmacyName)}`} key={cust.pharmacyName}>
+                          <Card className={`mb-2 border-l-4 hover:shadow-md transition-all cursor-pointer group ${colorClass}`}>
+                            <div className="p-3 flex justify-between items-center">
+                              <div>
+                                <h4 className="font-semibold text-slate-800 text-sm group-hover:text-primary transition-colors">{cust.pharmacyName}</h4>
+                                <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                                  <div className="flex items-center gap-1">
+                                    <Clock size={10} />
+                                    <span>{formatDistanceToNow(new Date(cust.lastVisit), { addSuffix: true })}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <ChevronRight size={16} className="text-slate-300 group-hover:text-primary" />
                             </div>
-                          )}
-                        </div>
-                      </div>
-                      <ChevronRight size={16} className="text-slate-300 group-hover:text-primary" />
-                    </div>
-                  </Card>
-                </Link>
-              ))}
+                          </Card>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
 
-              {hasMore && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleSection(uniqueKey)}
-                  className="w-full text-xs text-slate-500 hover:text-slate-700 h-8"
-                >
-                  {isExpanded ? "Show Less" : `Show ${areaList.length - 3} More in Area ${area}`}
-                </Button>
-              )}
-            </div>
-          );
-        })}
+                {showExpand && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleSection(area)}
+                    className="w-full mt-2 text-xs text-slate-500 hover:text-slate-700 h-8"
+                  >
+                    {isExpanded ? "Show Less" : `Show ${allInOrder.length - 3} More in Area ${area}`}
+                  </Button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderCategoryBlock = (list: CustomerStats[], label: string, bgClass: string, textClass: string, Icon: any) => {
+    return (
+      <div>
+        <div className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider ${textClass} mb-2`}>
+          <Icon size={12} /> {label}
+        </div>
+        {list.map(cust => (
+          <Link href={`/customers/${encodeURIComponent(cust.pharmacyName)}`} key={cust.pharmacyName}>
+            <Card className={`mb-2 border-l-4 hover:shadow-md transition-all cursor-pointer group`} style={{ borderLeftColor: textClass.includes('red') ? '#dc2626' : textClass.includes('orange') ? '#f97316' : '#eab308' }}>
+              <div className="p-3 flex justify-between items-center">
+                <div>
+                  <h4 className="font-semibold text-slate-800 text-sm group-hover:text-primary transition-colors">{cust.pharmacyName}</h4>
+                  <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                    <div className="flex items-center gap-1">
+                      <Clock size={10} />
+                      <span>{formatDistanceToNow(new Date(cust.lastVisit), { addSuffix: true })}</span>
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-slate-300 group-hover:text-primary" />
+              </div>
+            </Card>
+          </Link>
+        ))}
       </div>
     );
   };
@@ -167,24 +213,6 @@ export default function Home() {
         </div>
         <div className="absolute right-0 top-0 h-full w-1/3 bg-white/10 skew-x-12 transform translate-x-4"></div>
       </section>
-
-      {/* Pending Visits Section (New) */}
-      {(pendingVisits.urgent.length > 0 || pendingVisits.warning.length > 0 || pendingVisits.soon.length > 0) && (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              Pending Visits
-            </h3>
-          </div>
-
-          <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 dark:bg-slate-900/50">
-            {renderPendingList(pendingVisits.urgent, { bg: 'bg-red-500', text: 'text-red-600', icon: AlertCircle, label: "Over 6 Months" })}
-            {renderPendingList(pendingVisits.warning, { bg: 'bg-orange-500', text: 'text-orange-500', icon: Clock, label: "Over 3 Months" })}
-            {renderPendingList(pendingVisits.soon, { bg: 'bg-yellow-500', text: 'text-yellow-600', icon: Clock, label: "Over 1 Month" })}
-          </div>
-        </div>
-      )}
-
 
       {/* Recent Activity */}
       <div>
@@ -243,6 +271,10 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {/* Pending Visits (Grouped by Area -> Category) */}
+      {renderPendingVisits()}
+
     </div>
   );
 }
