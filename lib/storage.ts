@@ -23,3 +23,9 @@ export function getVisitById(id: string): Visit | undefined {
     const visits = getVisits();
     return visits.find((v) => v.id === id);
 }
+
+export function deleteVisit(id: string): void {
+    const visits = getVisits();
+    const newVisits = visits.filter(v => v.id !== id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newVisits));
+}

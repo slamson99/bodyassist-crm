@@ -242,12 +242,19 @@ function NewVisitContent() {
         try {
             const result = await deleteVisitAction(editId);
             if (result.success) {
+                // Delete from local storage immediately to prevent "ghost" reappearance
+                const { deleteVisit } = await import('@/lib/storage');
+                deleteVisit(editId);
+
+                // Force router refresh to clear server component cache
+                router.refresh();
                 router.back();
             } else {
                 alert(`Delete failed: ${result.error}`);
                 setLoading(false);
             }
         } catch (err) {
+            console.error(err);
             alert("Delete failed");
             setLoading(false);
         }

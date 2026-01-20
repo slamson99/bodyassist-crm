@@ -105,6 +105,7 @@ export async function deleteVisitAction(visitId: string) {
         if (result.success) {
             revalidatePath('/');
             revalidatePath('/customers');
+            revalidatePath('/history');
             return { success: true };
         }
         return { success: false, error: result.error || "Delete failed" };
