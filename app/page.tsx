@@ -19,7 +19,10 @@ export default function Home() {
     soon: CustomerStats[],    // > 1 month
   }>({ urgent: [], warning: [], soon: [] });
 
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+
   useEffect(() => {
+    // ... existing useEffect ...
     const loadDashboard = async () => {
       // Local visits for recent activity
       setVisits(getVisits());
@@ -71,6 +74,10 @@ export default function Home() {
     loadDashboard();
   }, [user?.areaCode]);
 
+  const toggleSection = (key: string) => {
+    setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const renderPendingList = (list: CustomerStats[], colorDetails: { bg: string, text: string, icon: any, label: string }) => {
     if (list.length === 0) return null;
 
@@ -82,44 +89,64 @@ export default function Home() {
       byArea[area].push(item);
     });
 
-    // Use array of keys to maintain order? Areas usually simple strings.
     const sortedAreas = Object.keys(byArea).sort();
+    const sectionId = colorDetails.label.replace(/\s+/g, '-').toLowerCase();
 
     return (
-      <div className="space-y-3 mb-6">
+      <div className="space-y-4 mb-6">
         <div className={`flex items-center gap-2 text-sm font-bold uppercase tracking-wider ${colorDetails.text} mb-2`}>
           <colorDetails.icon size={16} />
           {colorDetails.label} ({list.length})
         </div>
-        {sortedAreas.map(area => (
-          <div key={area} className="space-y-2">
-            {sortedAreas.length > 1 && <div className="text-xs font-semibold text-slate-400 pl-1">Area {area}</div>}
-            {byArea[area].map(cust => (
-              <Link href={`/customers/${encodeURIComponent(cust.pharmacyName)}`} key={cust.pharmacyName}>
-                <Card className="mb-2 border-l-4 hover:shadow-md transition-all cursor-pointer group" style={{ borderLeftColor: colorDetails.text === 'text-red-600' ? '#dc2626' : colorDetails.text === 'text-orange-500' ? '#f97316' : '#eab308' }}>
-                  <div className="p-3 flex justify-between items-center">
-                    <div>
-                      <h4 className="font-semibold text-slate-800 text-sm group-hover:text-primary transition-colors">{cust.pharmacyName}</h4>
-                      <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                        <div className="flex items-center gap-1">
-                          <Clock size={10} />
-                          <span>{formatDistanceToNow(new Date(cust.lastVisit), { addSuffix: true })}</span>
-                        </div>
-                        {cust.lastContact && cust.lastContact !== "Unknown" && (
+        {sortedAreas.map(area => {
+          const uniqueKey = `${sectionId}-${area}`;
+          const isExpanded = expandedSections[uniqueKey];
+          const areaList = byArea[area];
+          const displayList = isExpanded ? areaList : areaList.slice(0, 3);
+          const hasMore = areaList.length > 3;
+
+          return (
+            <div key={area} className="space-y-2">
+              {sortedAreas.length > 1 && <div className="text-xs font-semibold text-slate-400 pl-1">Area {area}</div>}
+
+              {displayList.map(cust => (
+                <Link href={`/customers/${encodeURIComponent(cust.pharmacyName)}`} key={cust.pharmacyName}>
+                  <Card className="mb-2 border-l-4 hover:shadow-md transition-all cursor-pointer group" style={{ borderLeftColor: colorDetails.text === 'text-red-600' ? '#dc2626' : colorDetails.text === 'text-orange-500' ? '#f97316' : '#eab308' }}>
+                    <div className="p-3 flex justify-between items-center">
+                      <div>
+                        <h4 className="font-semibold text-slate-800 text-sm group-hover:text-primary transition-colors">{cust.pharmacyName}</h4>
+                        <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
                           <div className="flex items-center gap-1">
-                            <User size={10} />
-                            <span>{cust.lastContact}</span>
+                            <Clock size={10} />
+                            <span>{formatDistanceToNow(new Date(cust.lastVisit), { addSuffix: true })}</span>
                           </div>
-                        )}
+                          {cust.lastContact && cust.lastContact !== "Unknown" && (
+                            <div className="flex items-center gap-1">
+                              <User size={10} />
+                              <span>{cust.lastContact}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
+                      <ChevronRight size={16} className="text-slate-300 group-hover:text-primary" />
                     </div>
-                    <ChevronRight size={16} className="text-slate-300 group-hover:text-primary" />
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        ))}
+                  </Card>
+                </Link>
+              ))}
+
+              {hasMore && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleSection(uniqueKey)}
+                  className="w-full text-xs text-slate-500 hover:text-slate-700 h-8"
+                >
+                  {isExpanded ? "Show Less" : `Show ${areaList.length - 3} More in Area ${area}`}
+                </Button>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   };
