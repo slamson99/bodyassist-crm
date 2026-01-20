@@ -291,9 +291,14 @@ export async function deleteVisitRow(visitId: string) {
 
         // Fetch sheet metadata to get sheetId
         const meta = await sheets.spreadsheets.get({ spreadsheetId });
-        const sheet = meta.data.sheets?.find(s => s.properties?.title === 'Sheet1');
-        if (!sheet?.properties?.sheetId) throw new Error("Sheet1 not found");
-        const sheetId = sheet.properties.sheetId; // This is the integer ID (e.g. 0)
+
+        // Use the first sheet found (most robust for single-sheet setup)
+        const sheet = meta.data.sheets?.[0];
+
+        if (!sheet?.properties?.sheetId && sheet?.properties?.sheetId !== 0) {
+            throw new Error("No sheet found in spreadsheet");
+        }
+        const sheetId = sheet.properties!.sheetId!;
 
         await sheets.spreadsheets.batchUpdate({
             spreadsheetId,
