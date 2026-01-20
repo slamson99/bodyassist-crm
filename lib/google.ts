@@ -314,7 +314,7 @@ export async function deleteVisitRow(visitId: string) {
         return { success: true };
     } catch (error) {
         console.error("Error deleting visit row:", error);
-        return { success: false, error: "Failed to delete visit" };
+        return { success: false, error: `Delete failed: ${error instanceof Error ? error.message : "Unknown error"}` };
     }
 }
 
