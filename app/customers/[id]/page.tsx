@@ -233,6 +233,27 @@ export default function CustomerDetailsPage() {
                                 <span className="text-xs text-slate-500 mt-1 uppercase tracking-wide">Last Seen</span>
                             </CardContent>
                         </Card>
+
+                        {/* Best Days Card */}
+                        {stats.bestDays && stats.bestDays.length > 0 && (
+                            <Card className="col-span-2 bg-emerald-50/50 border-emerald-100">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-xs font-semibold text-emerald-600 uppercase tracking-wide flex items-center gap-2">
+                                        <Clock size={14} /> Best Days to Visit
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="pt-0">
+                                    <div className="flex flex-wrap gap-2">
+                                        {stats.bestDays.map(day => (
+                                            <span key={day} className="text-sm font-bold text-emerald-700 bg-white px-3 py-1 rounded-md shadow-sm border border-emerald-100">
+                                                {day}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
                         <Card className="col-span-2">
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm font-medium text-slate-500 uppercase tracking-wide">Last Contact</CardTitle>

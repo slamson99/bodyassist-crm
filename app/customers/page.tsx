@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { getVisits } from "@/lib/storage";
 import { Visit } from "@/types";
-import { Search, User, Calendar, TrendingUp, MapPin } from "lucide-react";
+import { Search, User, Calendar, TrendingUp, MapPin, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 
@@ -262,6 +262,19 @@ export default function CustomersPage() {
                                                     ))}
                                                 </div>
                                             </div>
+
+                                            {stat.bestDays && stat.bestDays.length > 0 && (
+                                                <div className="flex items-center gap-2 pt-1">
+                                                    <Clock size={14} className="text-slate-400" />
+                                                    <div className="flex gap-1 flex-wrap">
+                                                        {stat.bestDays.map(day => (
+                                                            <span key={day} className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100">
+                                                                {day}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>
