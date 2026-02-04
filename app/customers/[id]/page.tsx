@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link";
 
+export const dynamic = 'force-dynamic';
+
 export default function CustomerDetailsPage() {
     // ... existing setup ...
     const router = useRouter();

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Clock, MapPin, ShoppingBag, AlertCircle, ChevronRight, User } from "lucide-react";
+import { PlusCircle, Clock, MapPin, ShoppingBag, AlertCircle, ChevronRight, User, Trash2 } from "lucide-react";
 import { Visit, CustomerStats } from "@/types";
 import { getVisits } from "@/lib/storage";
 import { formatDistanceToNow, addMonths, isBefore } from "date-fns";
@@ -273,7 +273,26 @@ export default function Home() {
                         </div>
                       )}
                     </div>
-                    <ChevronRight className="self-center text-gray-300 group-hover:text-primary transition-colors" size={20} />
+                    <div className="flex flex-col items-center gap-2 self-center">
+                      <ChevronRight className="text-gray-300 group-hover:text-primary transition-colors" size={20} />
+                      {/* Stop propagation to prevent navigation when clicking delete */}
+                      <div onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (confirm("Remove this visit from history? This cannot be undone.")) {
+                          // Optimistic update
+                          const newVisits = visits.filter(v => v.id !== visit.id);
+                          setVisits(newVisits);
+                          // Perform deletion
+                          import('@/lib/storage').then(mod => mod.deleteVisit(visit.id));
+                          import('@/app/actions').then(mod => mod.deleteVisitAction(visit.id));
+                        }
+                      }}>
+                        <div className="p-2 hover:bg-red-100 rounded-full text-slate-300 hover:text-red-500 transition-colors" title="Remove Entry">
+                          <Trash2 size={16} />
+                        </div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </Link>

@@ -177,7 +177,7 @@ export async function fetchVisitsFromSheet(): Promise<Visit[]> {
     try {
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId,
-            range: 'Sheet1!A:L',
+            range: 'Sheet1!A:M',
         });
 
         const rows = response.data.values;

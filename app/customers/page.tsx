@@ -13,6 +13,8 @@ import { CustomerStats } from "@/types";
 
 import { useUser } from "@/app/contexts/UserContext";
 
+export const dynamic = 'force-dynamic';
+
 export default function CustomersPage() {
     const { user } = useUser();
     const [searchTerm, setSearchTerm] = useState("");
