@@ -73,12 +73,13 @@ export async function appendVisitToSheet(visit: Visit) {
         visit.notes,
         visit.leadRating || "",
         visit.areaCode || "",
-        visit.user || ""
+        visit.user || "",
+        visit.bestDays ? visit.bestDays.join(", ") : ""
     ];
 
     await sheets.spreadsheets.values.append({
         spreadsheetId,
-        range: 'Sheet1!A:L',
+        range: 'Sheet1!A:M',
         valueInputOption: 'USER_ENTERED',
         requestBody: {
             values: [row],
@@ -198,6 +199,7 @@ export async function fetchVisitsFromSheet(): Promise<Visit[]> {
             leadRating: (row[9] as any) || undefined,
             areaCode: row[10] || undefined,
             user: row[11] || undefined,
+            bestDays: row[12] ? row[12].split(", ") : [],
         })).filter(v => v.id !== "ID" && v.id !== "id");
     } catch (error) {
         console.error("Error fetching from sheets:", error);
@@ -244,12 +246,13 @@ export async function updateVisitRow(visit: Visit) {
             visit.notes,
             visit.leadRating || "",
             visit.areaCode || "",
-            visit.user || ""
+            visit.user || "",
+            visit.bestDays ? visit.bestDays.join(", ") : ""
         ];
 
         await sheets.spreadsheets.values.update({
             spreadsheetId,
-            range,
+            range: `Sheet1!A${sheetRow}:M${sheetRow}`,
             valueInputOption: 'USER_ENTERED',
             requestBody: {
                 values: [rowData],

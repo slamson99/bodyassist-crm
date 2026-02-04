@@ -51,6 +51,7 @@ function NewVisitContent() {
         photoUrl: undefined,
         leadRating: undefined,
         areaCode: "",
+        bestDays: [],
     });
 
     // Initialize date (New Visit Only)
@@ -76,13 +77,7 @@ function NewVisitContent() {
                     const v = result.visit;
                     setOriginalVisit(v);
 
-                    // Convert ISO timestamp back to local input format (YYYY-MM-DDTHH:mm)
-                    // The stored timestamp is UTC ISO. We need to display it in local time again?
-                    // Or keep it as is?
-                    // Input type="datetime-local" expects "YYYY-MM-DDTHH:mm".
-                    // v.timestamp is typically "2025-01-20T04:00:00.000Z".
-                    // If we just slice it, we get UTC time in the input, which might look wrong (11 hours behind).
-                    // We need to convert the UTC date object to a Local ISO string.
+                    // Convert ISO timestamp back to local input format
                     let localTs = "";
                     if (v.timestamp) {
                         const d = new Date(v.timestamp);
@@ -103,7 +98,6 @@ function NewVisitContent() {
         };
         loadVisit();
     }, [editId, router]);
-
 
     const [serverStats, setServerStats] = useState<CustomerStats[]>([]);
     const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -141,7 +135,8 @@ function NewVisitContent() {
             ...prev,
             pharmacyName: name,
             areaCode: stat?.areaCode || prev.areaCode,
-            customerContact: stat?.lastContact || prev.customerContact
+            customerContact: stat?.lastContact || prev.customerContact,
+            bestDays: stat?.bestDays || [],
         }));
         setShowSuggestions(false);
     };
@@ -191,7 +186,8 @@ function NewVisitContent() {
             photoUrl: formData.photoUrl,
             leadRating: formData.leadRating,
             areaCode: formData.areaCode,
-            user: isEditMode && originalVisit ? originalVisit.user : user?.name, // Keep original user if editing? Or update to editor? Usually keep original.
+            user: isEditMode && originalVisit ? originalVisit.user : user?.name,
+            bestDays: formData.bestDays || [],
         };
 
         try {
@@ -300,15 +296,38 @@ function NewVisitContent() {
                         </div>
 
                         <div>
-                            <label className="text-sm font-medium text-slate-700 block mb-1">Contact Person</label>
-                            <div className="relative">
-                                <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                                <Input
-                                    placeholder="Who did you speak with?"
-                                    value={formData.customerContact || ""}
-                                    onChange={(e) => setFormData({ ...formData, customerContact: e.target.value })}
-                                    className="pl-9"
-                                />
+                            <label className="text-sm font-medium text-slate-700 block mb-1">Contact Person & Best Days</label>
+                            <div className="flex gap-4">
+                                <div className="relative flex-1">
+                                    <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                                    <Input
+                                        placeholder="Who did you speak with?"
+                                        value={formData.customerContact || ""}
+                                        onChange={(e) => setFormData({ ...formData, customerContact: e.target.value })}
+                                        className="pl-9"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    {["Mon", "Tue", "Wed", "Thu", "Fri"].map(day => (
+                                        <button
+                                            key={day}
+                                            type="button"
+                                            onClick={() => {
+                                                const current = formData.bestDays || [];
+                                                const updated = current.includes(day)
+                                                    ? current.filter(d => d !== day)
+                                                    : [...current, day];
+                                                setFormData({ ...formData, bestDays: updated });
+                                            }}
+                                            className={`h-10 w-10 rounded-full text-xs font-bold transition-all ${(formData.bestDays || []).includes(day)
+                                                ? "bg-blue-600 text-white shadow-md"
+                                                : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                                                }`}
+                                        >
+                                            {day}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
@@ -335,16 +354,6 @@ function NewVisitContent() {
                                     />
                                 )}
                             </div>
-                        </div>
-
-                        <div>
-                            <label className="text-sm font-medium text-slate-700 block mb-1">Date & Time</label>
-                            <Input
-                                type="datetime-local"
-                                required
-                                value={formData.timestamp || ""}
-                                onChange={(e) => setFormData({ ...formData, timestamp: e.target.value })}
-                            />
                         </div>
                     </CardContent>
                 </Card>
@@ -451,8 +460,8 @@ function NewVisitContent() {
                         )}
                     </Button>
                 </div>
-            </form>
-        </div>
+            </form >
+        </div >
     );
 }
 

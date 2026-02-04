@@ -177,6 +177,7 @@ export async function getCustomerStatsAction(userAreaCode: string, filterUser?: 
                 topActions,
                 leadRating: ratedVisit?.leadRating,
                 areaCode: visitWithArea?.areaCode,
+                bestDays: lastVisit.bestDays,
             };
         }).filter(Boolean) as CustomerStats[];
 

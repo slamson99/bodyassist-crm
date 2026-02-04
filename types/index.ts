@@ -11,6 +11,7 @@ export interface Visit {
     leadRating?: 'Low' | 'Medium' | 'High';
     areaCode?: string;
     user?: string;
+    bestDays?: string[];
 }
 
 export const QUICK_ACTIONS = [
@@ -33,4 +34,5 @@ export interface CustomerStats {
     topActions: string[];
     leadRating?: 'Low' | 'Medium' | 'High';
     areaCode?: string;
+    bestDays?: string[];
 }

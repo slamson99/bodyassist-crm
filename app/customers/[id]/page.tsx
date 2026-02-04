@@ -32,6 +32,7 @@ export default function CustomerDetailsPage() {
         lastVisitDate: null as Date | null,
         lastContact: "N/A",
         areaCode: undefined as string | undefined, // Added area code to stats
+        bestDays: [] as string[],
         topActions: [] as { action: string; count: number }[],
     });
 
@@ -87,6 +88,7 @@ export default function CustomerDetailsPage() {
                     lastVisitDate: new Date(lastVisit.timestamp),
                     lastContact: lastVisit.customerContact || "N/A",
                     areaCode: lastVisit.areaCode, // Get from specific visit (likely latest)
+                    bestDays: lastVisit.bestDays || [],
                     topActions,
                 });
 
@@ -149,43 +151,59 @@ export default function CustomerDetailsPage() {
                 </div>
 
                 {/* Area Code Header Edit */}
-                <div className="flex items-center pl-12 gap-2">
-                    <MapPin size={16} className="text-slate-400" />
-                    {isEditingArea ? (
-                        <div className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200">
-                            <Input
-                                value={tempAreaCode}
-                                onChange={(e) => setTempAreaCode(e.target.value)}
-                                className="h-8 w-24 text-sm"
-                                placeholder="Area"
-                                autoFocus
-                            />
-                            <Button
-                                size="sm"
-                                className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700"
-                                onClick={handleSaveAreaCode}
-                                disabled={isSavingArea}
-                            >
-                                {isSavingArea ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-8 w-8 p-0"
-                                onClick={() => {
-                                    setIsEditingArea(false);
-                                    setTempAreaCode(stats.areaCode || "");
-                                }}
-                            >
-                                <X size={14} />
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsEditingArea(true)}>
-                            <span className={cn("text-sm font-medium", !stats.areaCode ? "text-slate-400 italic" : "text-slate-600")}>
-                                {stats.areaCode ? `Area: ${stats.areaCode}` : "Add Area Code"}
-                            </span>
-                            <Pencil size={12} className="text-slate-300 group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100" />
+                <div className="flex items-center gap-4 pl-12">
+                    <div className="flex items-center gap-2">
+                        <MapPin size={16} className="text-slate-400" />
+                        {isEditingArea ? (
+                            <div className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200">
+                                <Input
+                                    value={tempAreaCode}
+                                    onChange={(e) => setTempAreaCode(e.target.value)}
+                                    className="h-8 w-24 text-sm"
+                                    placeholder="Area"
+                                    autoFocus
+                                />
+                                <Button
+                                    size="sm"
+                                    className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700"
+                                    onClick={handleSaveAreaCode}
+                                    disabled={isSavingArea}
+                                >
+                                    {isSavingArea ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => {
+                                        setIsEditingArea(false);
+                                        setTempAreaCode(stats.areaCode || "");
+                                    }}
+                                >
+                                    <X size={14} />
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsEditingArea(true)}>
+                                <span className={cn("text-sm font-medium", !stats.areaCode ? "text-slate-400 italic" : "text-slate-600")}>
+                                    {stats.areaCode ? `Area: ${stats.areaCode}` : "Add Area Code"}
+                                </span>
+                                <Pencil size={12} className="text-slate-300 group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100" />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Best Days Display */}
+                    {stats.bestDays && stats.bestDays.length > 0 && (
+                        <div className="flex items-center gap-2">
+                            <Clock size={16} className="text-slate-400" />
+                            <div className="flex gap-1">
+                                {stats.bestDays.map(day => (
+                                    <span key={day} className="text-xs font-semibold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100">
+                                        {day}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>
