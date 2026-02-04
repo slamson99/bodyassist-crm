@@ -176,7 +176,7 @@ function NewVisitContent() {
 
         const visitData: Visit = {
             id: isEditMode && originalVisit ? originalVisit.id : crypto.randomUUID(),
-            pharmacyName: formData.pharmacyName!,
+            pharmacyName: formData.pharmacyName!.trim(),
             customerContact: formData.customerContact,
             timestamp: utcTimestamp,
             actions: formData.actions || [],

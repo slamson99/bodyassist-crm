@@ -62,7 +62,7 @@ export default function CustomerDetailsPage() {
 
             // Filter for this customer
             const customerVisits = allVisits
-                .filter((v) => v.pharmacyName.toLowerCase() === pharmacyName.toLowerCase())
+                .filter((v) => v.pharmacyName.trim().toLowerCase() === pharmacyName.trim().toLowerCase())
                 .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
             setVisits(customerVisits);
