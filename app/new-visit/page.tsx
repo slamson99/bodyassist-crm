@@ -296,18 +296,43 @@ function NewVisitContent() {
                         </div>
 
                         <div>
-                            <label className="text-sm font-medium text-slate-700 block mb-1">Contact Person & Best Days</label>
-                            <div className="flex gap-4">
-                                <div className="relative flex-1">
-                                    <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                                    <Input
-                                        placeholder="Who did you speak with?"
-                                        value={formData.customerContact || ""}
-                                        onChange={(e) => setFormData({ ...formData, customerContact: e.target.value })}
-                                        className="pl-9"
-                                    />
+                            <label className="text-sm font-medium text-slate-700 block mb-1">Contact Person</label>
+                            <div className="relative">
+                                <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                                <Input
+                                    placeholder="Who did you speak with?"
+                                    value={formData.customerContact || ""}
+                                    onChange={(e) => setFormData({ ...formData, customerContact: e.target.value })}
+                                    className="pl-9"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-sm font-medium text-slate-700 block mb-1">Area Code & Best Days</label>
+                            <div className="flex gap-4 items-center">
+                                <div className="relative w-24 shrink-0">
+                                    <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 z-10" />
+                                    {showRestrictedDropdown ? (
+                                        <select
+                                            className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm pl-9"
+                                            value={formData.areaCode || ""}
+                                            onChange={(e) => setFormData({ ...formData, areaCode: e.target.value })}
+                                            required
+                                        >
+                                            <option value="" disabled>Select Area</option>
+                                            {userAreaOptions.map(code => <option key={code} value={code}>{code}</option>)}
+                                        </select>
+                                    ) : (
+                                        <Input
+                                            placeholder="Area"
+                                            value={formData.areaCode || ""}
+                                            onChange={(e) => setFormData({ ...formData, areaCode: e.target.value })}
+                                            className="pl-9"
+                                        />
+                                    )}
                                 </div>
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar">
                                     {["Mon", "Tue", "Wed", "Thu", "Fri"].map(day => (
                                         <button
                                             key={day}
@@ -319,7 +344,7 @@ function NewVisitContent() {
                                                     : [...current, day];
                                                 setFormData({ ...formData, bestDays: updated });
                                             }}
-                                            className={`h-10 w-10 rounded-full text-xs font-bold transition-all ${(formData.bestDays || []).includes(day)
+                                            className={`h-10 w-10 shrink-0 rounded-full text-xs font-bold transition-all ${(formData.bestDays || []).includes(day)
                                                 ? "bg-blue-600 text-white shadow-md"
                                                 : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                                                 }`}
@@ -328,31 +353,6 @@ function NewVisitContent() {
                                         </button>
                                     ))}
                                 </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="text-sm font-medium text-slate-700 block mb-1">Area Code</label>
-                            <div className="relative">
-                                <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 z-10" />
-                                {showRestrictedDropdown ? (
-                                    <select
-                                        className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm pl-9"
-                                        value={formData.areaCode || ""}
-                                        onChange={(e) => setFormData({ ...formData, areaCode: e.target.value })}
-                                        required
-                                    >
-                                        <option value="" disabled>Select Area</option>
-                                        {userAreaOptions.map(code => <option key={code} value={code}>{code}</option>)}
-                                    </select>
-                                ) : (
-                                    <Input
-                                        placeholder="e.g. 1A, 2A"
-                                        value={formData.areaCode || ""}
-                                        onChange={(e) => setFormData({ ...formData, areaCode: e.target.value })}
-                                        className="pl-9"
-                                    />
-                                )}
                             </div>
                         </div>
                     </CardContent>
