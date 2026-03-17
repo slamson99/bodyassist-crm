@@ -74,12 +74,14 @@ export async function appendVisitToSheet(visit: Visit) {
         visit.leadRating || "",
         visit.areaCode || "",
         visit.user || "",
-        visit.bestDays ? visit.bestDays.join(", ") : ""
+        visit.bestDays ? visit.bestDays.join(", ") : "",
+        visit.customerComments || "",
+        visit.frequency || ""
     ];
 
     await sheets.spreadsheets.values.append({
         spreadsheetId,
-        range: 'Sheet1!A:M',
+        range: 'Sheet1!A:O',
         valueInputOption: 'USER_ENTERED',
         requestBody: {
             values: [row],
@@ -177,7 +179,7 @@ export async function fetchVisitsFromSheet(): Promise<Visit[]> {
     try {
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId,
-            range: 'Sheet1!A:M',
+            range: 'Sheet1!A:O',
         });
 
         const rows = response.data.values;
@@ -200,6 +202,8 @@ export async function fetchVisitsFromSheet(): Promise<Visit[]> {
             areaCode: row[10] || undefined,
             user: row[11] || undefined,
             bestDays: row[12] ? row[12].split(", ") : [],
+            customerComments: row[13] || undefined,
+            frequency: (row[14] as any) || undefined,
         })).filter(v => v.id !== "ID" && v.id !== "id");
     } catch (error) {
         console.error("Error fetching from sheets:", error);
@@ -247,12 +251,14 @@ export async function updateVisitRow(visit: Visit) {
             visit.leadRating || "",
             visit.areaCode || "",
             visit.user || "",
-            visit.bestDays ? visit.bestDays.join(", ") : ""
+            visit.bestDays ? visit.bestDays.join(", ") : "",
+            visit.customerComments || "",
+            visit.frequency || ""
         ];
 
         await sheets.spreadsheets.values.update({
             spreadsheetId,
-            range: `Sheet1!A${sheetRow}:M${sheetRow}`,
+            range: `Sheet1!A${sheetRow}:O${sheetRow}`,
             valueInputOption: 'USER_ENTERED',
             requestBody: {
                 values: [rowData],

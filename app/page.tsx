@@ -141,16 +141,19 @@ export default function Home() {
                                     <span>{formatDistanceToNow(new Date(cust.lastVisit), { addSuffix: true })}</span>
                                   </div>
                                 </div>
-                                {/* Best Days Display */}
-                                {cust.bestDays && cust.bestDays.length > 0 && (
-                                  <div className="mt-2 flex gap-1 flex-wrap">
-                                    {cust.bestDays.map(day => (
-                                      <span key={day} className="text-[10px] font-semibold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100">
-                                        {day}
+                                {/* Best Days & Frequency Display */}
+                                <div className="mt-2 flex gap-1 flex-wrap items-center">
+                                  {cust.bestDays && cust.bestDays.map(day => (
+                                    <span key={day} className="text-[10px] font-semibold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100">
+                                      {day}
+                                    </span>
+                                  ))}
+                                  {cust.frequency && (
+                                      <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 uppercase">
+                                          FREQ: {cust.frequency}
                                       </span>
-                                    ))}
-                                  </div>
-                                )}
+                                  )}
+                                </div>
                               </div>
                               <ChevronRight size={16} className="text-slate-300 group-hover:text-primary" />
                             </div>

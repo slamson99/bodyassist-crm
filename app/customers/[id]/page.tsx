@@ -35,6 +35,8 @@ export default function CustomerDetailsPage() {
         lastContact: "N/A",
         areaCode: undefined as string | undefined, // Added area code to stats
         bestDays: [] as string[],
+        customerComments: "",
+        frequency: undefined as string | undefined,
         topActions: [] as { action: string; count: number }[],
     });
 
@@ -91,6 +93,8 @@ export default function CustomerDetailsPage() {
                     lastContact: lastVisit.customerContact || "N/A",
                     areaCode: lastVisit.areaCode, // Get from specific visit (likely latest)
                     bestDays: lastVisit.bestDays || [],
+                    customerComments: lastVisit.customerComments || "",
+                    frequency: lastVisit.frequency,
                     topActions,
                 });
 
@@ -251,6 +255,11 @@ export default function CustomerDetailsPage() {
                                                 {day}
                                             </span>
                                         ))}
+                                        {stats.frequency && (
+                                            <span className="text-sm font-bold text-indigo-700 bg-white px-3 py-1 rounded-md shadow-sm border border-indigo-100 flex items-center gap-1">
+                                                FREQ: {stats.frequency.toUpperCase()}
+                                            </span>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -268,6 +277,20 @@ export default function CustomerDetailsPage() {
                             </CardContent>
                         </Card>
                     </div>
+
+                    {/* Customer Comments */}
+                    {stats.customerComments && (
+                        <Card className="bg-amber-50/50 border-amber-100 border-l-4 border-l-amber-500">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-semibold text-amber-800 uppercase tracking-wide flex items-center gap-2">
+                                    Customer Comments
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-sm text-amber-900 whitespace-pre-wrap">{stats.customerComments}</p>
+                            </CardContent>
+                        </Card>
+                    )}
 
                     {/* Top Actions */}
                     <Card>

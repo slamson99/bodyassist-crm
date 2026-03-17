@@ -12,13 +12,15 @@ export interface Visit {
     areaCode?: string;
     user?: string;
     bestDays?: string[];
+    customerComments?: string;
+    frequency?: '4w' | '6w' | '8w';
 }
 
 export const QUICK_ACTIONS = [
     "Stock Check",
     "Product Education",
     "Merchandising",
-    "Order Taken",
+    "Email",
     "Complaint Handling",
     "Relationship Building",
     "Phone Call",
@@ -35,4 +37,6 @@ export interface CustomerStats {
     leadRating?: 'Low' | 'Medium' | 'High';
     areaCode?: string;
     bestDays?: string[];
+    customerComments?: string;
+    frequency?: '4w' | '6w' | '8w';
 }

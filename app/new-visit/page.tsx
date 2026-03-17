@@ -52,6 +52,8 @@ function NewVisitContent() {
         leadRating: undefined,
         areaCode: "",
         bestDays: [],
+        customerComments: "",
+        frequency: undefined,
     });
 
     // Initialize date (New Visit Only)
@@ -137,6 +139,8 @@ function NewVisitContent() {
             areaCode: stat?.areaCode || prev.areaCode,
             customerContact: stat?.lastContact || prev.customerContact,
             bestDays: stat?.bestDays || [],
+            customerComments: stat?.customerComments || prev.customerComments,
+            frequency: stat?.frequency || prev.frequency,
         }));
         setShowSuggestions(false);
     };
@@ -188,6 +192,8 @@ function NewVisitContent() {
             areaCode: formData.areaCode,
             user: isEditMode && originalVisit ? originalVisit.user : user?.name,
             bestDays: formData.bestDays || [],
+            customerComments: formData.customerComments || "",
+            frequency: formData.frequency,
         };
 
         try {
@@ -272,87 +278,125 @@ function NewVisitContent() {
                         <CardTitle className="text-lg">Details</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="relative">
-                            <label className="text-sm font-medium text-slate-700 block mb-1">Pharmacy Name</label>
-                            <Input
-                                required
-                                placeholder="e.g. Chemist Warehouse Melbourne"
-                                value={formData.pharmacyName}
-                                onChange={handlePharmacyChange}
-                                onBlur={() => setTimeout(() => { setShowSuggestions(false); handlePharmacyBlur(); }, 200)}
-                                autoComplete="off"
-                            />
-                            {showSuggestions && (
-                                <div className="absolute z-10 w-full bg-white mt-1 rounded-md shadow-lg border border-slate-200 max-h-60 overflow-y-auto">
-                                    {suggestions
-                                        .filter(s => s.toLowerCase().includes(formData.pharmacyName!.toLowerCase()) && s !== formData.pharmacyName)
-                                        .map((suggestion) => (
-                                            <div key={suggestion} className="px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm" onMouseDown={(e) => { e.preventDefault(); selectSuggestion(suggestion); }}>
-                                                {suggestion}
-                                            </div>
-                                        ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="text-sm font-medium text-slate-700 block mb-1">Contact Person</label>
-                            <div className="relative">
-                                <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                                <Input
-                                    placeholder="Who did you speak with?"
-                                    value={formData.customerContact || ""}
-                                    onChange={(e) => setFormData({ ...formData, customerContact: e.target.value })}
-                                    className="pl-9"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="text-sm font-medium text-slate-700 block mb-1">Area Code & Best Days</label>
-                            <div className="flex gap-4 items-center">
-                                <div className="relative w-24 shrink-0">
-                                    <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 z-10" />
-                                    {showRestrictedDropdown ? (
-                                        <select
-                                            className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm pl-9"
-                                            value={formData.areaCode || ""}
-                                            onChange={(e) => setFormData({ ...formData, areaCode: e.target.value })}
-                                            required
-                                        >
-                                            <option value="" disabled>Select Area</option>
-                                            {userAreaOptions.map(code => <option key={code} value={code}>{code}</option>)}
-                                        </select>
-                                    ) : (
-                                        <Input
-                                            placeholder="Area"
-                                            value={formData.areaCode || ""}
-                                            onChange={(e) => setFormData({ ...formData, areaCode: e.target.value })}
-                                            className="pl-9"
-                                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Left Column (Inputs) */}
+                            <div className="space-y-4">
+                                <div className="relative">
+                                    <label className="text-sm font-medium text-slate-700 block mb-1">Pharmacy Name</label>
+                                    <Input
+                                        required
+                                        placeholder="e.g. Chemist Warehouse Melbourne"
+                                        value={formData.pharmacyName}
+                                        onChange={handlePharmacyChange}
+                                        onBlur={() => setTimeout(() => { setShowSuggestions(false); handlePharmacyBlur(); }, 200)}
+                                        autoComplete="off"
+                                    />
+                                    {showSuggestions && (
+                                        <div className="absolute z-10 w-full bg-white mt-1 rounded-md shadow-lg border border-slate-200 max-h-60 overflow-y-auto">
+                                            {suggestions
+                                                .filter(s => s.toLowerCase().includes(formData.pharmacyName!.toLowerCase()) && s !== formData.pharmacyName)
+                                                .map((suggestion) => (
+                                                    <div key={suggestion} className="px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm" onMouseDown={(e) => { e.preventDefault(); selectSuggestion(suggestion); }}>
+                                                        {suggestion}
+                                                    </div>
+                                                ))}
+                                        </div>
                                     )}
                                 </div>
-                                <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar">
-                                    {["Mon", "Tue", "Wed", "Thu", "Fri"].map(day => (
-                                        <button
-                                            key={day}
-                                            type="button"
-                                            onClick={() => {
-                                                const current = formData.bestDays || [];
-                                                const updated = current.includes(day)
-                                                    ? current.filter(d => d !== day)
-                                                    : [...current, day];
-                                                setFormData({ ...formData, bestDays: updated });
-                                            }}
-                                            className={`h-10 w-10 shrink-0 rounded-full text-xs font-bold transition-all ${(formData.bestDays || []).includes(day)
-                                                ? "bg-blue-600 text-white shadow-md"
-                                                : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                                                }`}
-                                        >
-                                            {day}
-                                        </button>
-                                    ))}
+
+                                <div>
+                                    <label className="text-sm font-medium text-slate-700 block mb-1">Contact Person</label>
+                                    <div className="relative">
+                                        <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                                        <Input
+                                            placeholder="Who did you speak with?"
+                                            value={formData.customerContact || ""}
+                                            onChange={(e) => setFormData({ ...formData, customerContact: e.target.value })}
+                                            className="pl-9"
+                                        />
+                                    </div>
                                 </div>
+
+                                <div>
+                                    <label className="text-sm font-medium text-slate-700 block mb-1">Area Code & Best Days</label>
+                                    <div className="flex gap-4 items-center">
+                                        <div className="relative w-24 shrink-0">
+                                            <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 z-10" />
+                                            {showRestrictedDropdown ? (
+                                                <select
+                                                    className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm pl-9"
+                                                    value={formData.areaCode || ""}
+                                                    onChange={(e) => setFormData({ ...formData, areaCode: e.target.value })}
+                                                    required
+                                                >
+                                                    <option value="" disabled>Select Area</option>
+                                                    {userAreaOptions.map(code => <option key={code} value={code}>{code}</option>)}
+                                                </select>
+                                            ) : (
+                                                <Input
+                                                    placeholder="Area"
+                                                    value={formData.areaCode || ""}
+                                                    onChange={(e) => setFormData({ ...formData, areaCode: e.target.value })}
+                                                    className="pl-9"
+                                                />
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar">
+                                            {["Mon", "Tue", "Wed", "Thu", "Fri"].map(day => (
+                                                <button
+                                                    key={day}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const current = formData.bestDays || [];
+                                                        const updated = current.includes(day)
+                                                            ? current.filter(d => d !== day)
+                                                            : [...current, day];
+                                                        setFormData({ ...formData, bestDays: updated });
+                                                    }}
+                                                    className={`h-10 w-10 shrink-0 rounded-full text-xs font-bold transition-all ${(formData.bestDays || []).includes(day)
+                                                        ? "bg-blue-600 text-white shadow-md"
+                                                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                                                        }`}
+                                                >
+                                                    {day}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label className="text-sm font-medium text-slate-700 block mb-1">Frequency</label>
+                                    <div className="flex items-center gap-2">
+                                        {(['4w', '6w', '8w'] as const).map(freq => (
+                                            <button
+                                                key={freq}
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, frequency: freq })}
+                                                className={`h-10 px-4 rounded-xl text-sm font-bold transition-all ${formData.frequency === freq
+                                                    ? "bg-indigo-600 text-white shadow-md"
+                                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                                                    }`}
+                                            >
+                                                {freq.toUpperCase()}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right Column (Comments) */}
+                            <div className="flex flex-col h-full">
+                                <label className="text-sm font-medium text-slate-700 block mb-1">Customer Comments</label>
+                                <Textarea
+                                    placeholder="Persistent notes about this customer..."
+                                    value={formData.customerComments || ""}
+                                    onChange={(e) => setFormData({ ...formData, customerComments: e.target.value })}
+                                    className="resize-none flex-1 min-h-[120px]"
+                                />
+                                <p className="text-xs text-slate-500 mt-2">
+                                    These comments will carry over to future visits.
+                                </p>
                             </div>
                         </div>
                     </CardContent>
