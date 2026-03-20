@@ -6,7 +6,7 @@ export interface Visit {
     actions: string[];
     hasOrder: boolean;
     orderDetails?: string;
-    photoUrl?: string; // Stored as dataURL for localStorage
+    photoUrls?: string[]; // Array of URLs or dataURLs
     notes: string;
     leadRating?: 'Low' | 'Medium' | 'High';
     areaCode?: string;

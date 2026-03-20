@@ -390,32 +390,36 @@ export default function CustomerDetailsPage() {
                                         </div>
                                     )}
 
-                                    {visit.photoUrl && visit.photoUrl !== "Image Upload Failed" && (
-                                        <div className="mt-2">
-                                            {visit.photoUrl.includes("drive.google.com") ? (
-                                                <a
-                                                    href={visit.photoUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors border border-slate-200"
-                                                >
-                                                    <span className="sr-only">Open Drive File</span>
-                                                    <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" className="w-4 h-4" alt="Drive" />
-                                                    View on Drive
-                                                </a>
-                                            ) : (
-                                                <button
-                                                    onClick={() => setSelectedImage(visit.photoUrl || null)}
-                                                    className="inline-block group relative focus:outline-none"
-                                                >
-                                                    <img
-                                                        src={visit.photoUrl}
-                                                        alt="Visit Proof"
-                                                        className="h-12 w-12 object-cover rounded-lg border border-slate-200 shadow-sm transition-transform hover:scale-110"
-                                                    />
-                                                    <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent rounded-lg transition-colors" />
-                                                </button>
-                                            )}
+                                    {visit.photoUrls && visit.photoUrls.length > 0 && (
+                                        <div className="mt-2 flex flex-wrap gap-3">
+                                            {visit.photoUrls.map((url, i) => (
+                                                <div key={i}>
+                                                    {url.includes("drive.google.com") ? (
+                                                        <a
+                                                            href={url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors border border-slate-200"
+                                                        >
+                                                            <span className="sr-only">Open Drive File</span>
+                                                            <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" className="w-4 h-4" alt="Drive" />
+                                                            View on Drive
+                                                        </a>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => setSelectedImage(url)}
+                                                            className="inline-block group relative focus:outline-none"
+                                                        >
+                                                            <img
+                                                                src={url}
+                                                                alt={`Visit Proof ${i + 1}`}
+                                                                className="h-16 w-16 object-cover rounded-lg border border-slate-200 shadow-sm transition-transform hover:scale-105"
+                                                            />
+                                                            <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent rounded-lg transition-colors" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))}
                                         </div>
                                     )}
                                 </CardContent>

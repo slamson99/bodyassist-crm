@@ -54,16 +54,16 @@ export default function HistoryPage() {
                                             ))}
                                         </div>
 
-                                        {(visit.hasOrder || visit.photoUrl || visit.notes) && (
+                                        {(visit.hasOrder || (visit.photoUrls && visit.photoUrls.length > 0) || visit.notes) && (
                                             <div className="border-t border-slate-50 pt-3 mt-3 flex gap-4 text-sm text-slate-500">
                                                 {visit.hasOrder && (
                                                     <div className="flex items-center text-green-600 font-medium">
                                                         <ShoppingBag size={14} className="mr-1" /> Order
                                                     </div>
                                                 )}
-                                                {visit.photoUrl && (
+                                                {(visit.photoUrls && visit.photoUrls.length > 0) && (
                                                     <div className="flex items-center text-blue-600 font-medium">
-                                                        <MapPin size={14} className="mr-1" /> Photo
+                                                        <MapPin size={14} className="mr-1" /> {visit.photoUrls.length > 1 ? `${visit.photoUrls.length} Photos` : "Photo"}
                                                     </div>
                                                 )}
                                                 {visit.notes && (

@@ -48,7 +48,7 @@ function NewVisitContent() {
         hasOrder: false,
         orderDetails: "",
         notes: "",
-        photoUrl: undefined,
+        photoUrls: undefined,
         leadRating: undefined,
         areaCode: "",
         bestDays: [],
@@ -187,7 +187,7 @@ function NewVisitContent() {
             hasOrder: formData.hasOrder || false,
             orderDetails: formData.orderDetails || "",
             notes: formData.notes || "",
-            photoUrl: formData.photoUrl,
+            photoUrls: formData.photoUrls,
             leadRating: formData.leadRating,
             areaCode: formData.areaCode,
             user: isEditMode && originalVisit ? originalVisit.user : user?.name,
@@ -200,16 +200,25 @@ function NewVisitContent() {
             const { submitVisitToCloud, updateVisitAction, uploadPhotoAction } = await import('@/app/actions');
 
             // Handle Photo Upload
-            if (visitData.photoUrl && visitData.photoUrl.startsWith('data:')) {
-                const filename = `visit-${visitData.id}-${Date.now()}.jpg`;
-                const uploadResult = await uploadPhotoAction(visitData.photoUrl, filename);
-                if (uploadResult.success && uploadResult.url) {
-                    visitData.photoUrl = uploadResult.url;
-                } else {
-                    setLoading(false);
-                    alert(`Photo upload failed: ${uploadResult.error || "Unknown error"}`);
-                    return; // Stop submission so user can fix
+            if (visitData.photoUrls && visitData.photoUrls.length > 0) {
+                const uploadedUrls = [];
+                let i = 0;
+                for (const url of visitData.photoUrls) {
+                    if (url.startsWith('data:')) {
+                        const filename = `visit-${visitData.id}-${Date.now()}-${i++}.jpg`;
+                        const uploadResult = await uploadPhotoAction(url, filename);
+                        if (uploadResult.success && uploadResult.url) {
+                            uploadedUrls.push(uploadResult.url);
+                        } else {
+                            setLoading(false);
+                            alert(`Photo upload failed: ${uploadResult.error || "Unknown error"}`);
+                            return; // Stop submission so user can fix
+                        }
+                    } else {
+                        uploadedUrls.push(url); // Already uploaded
+                    }
                 }
+                visitData.photoUrls = uploadedUrls;
             }
 
             if (isEditMode) {
@@ -458,7 +467,7 @@ function NewVisitContent() {
                 <Card className="border-none shadow-sm">
                     <CardHeader className="pb-3"><CardTitle className="text-lg">Photo Evidence</CardTitle></CardHeader>
                     <CardContent>
-                        <PhotoUpload currentPhoto={formData.photoUrl || null} onPhotoSelect={(url) => setFormData({ ...formData, photoUrl: url || undefined })} />
+                        <PhotoUpload currentPhotos={formData.photoUrls || []} onPhotosChange={(urls) => setFormData({ ...formData, photoUrls: urls.length > 0 ? urls : undefined })} />
                     </CardContent>
                 </Card>
 
