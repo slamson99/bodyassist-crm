@@ -1,6 +1,8 @@
 import { google } from 'googleapis';
 import { Visit } from '@/types';
 import { Readable } from 'stream';
+import { unstable_cache, revalidateTag } from 'next/cache';
+
 
 // Constants
 const SCOPES = [
@@ -88,6 +90,7 @@ export async function appendVisitToSheet(visit: Visit) {
         },
     });
 
+    revalidateTag('visits', { expire: 0 });
     return true;
 }
 
@@ -168,7 +171,7 @@ function safeParseDate(dateStr: string): string {
     return new Date().toISOString();
 }
 
-export async function fetchVisitsFromSheet(): Promise<Visit[]> {
+async function fetchVisitsRaw(): Promise<Visit[]> {
     const sheets = await getSheetsClient();
     if (!sheets) return []; // No credentials, return empty (app falls back to local storage)
 
@@ -210,6 +213,21 @@ export async function fetchVisitsFromSheet(): Promise<Visit[]> {
         return [];
     }
 }
+
+const getCachedVisits = unstable_cache(
+    async (): Promise<Visit[]> => {
+        return fetchVisitsRaw();
+    },
+    ['visits-sheet-data'],
+    {
+        tags: ['visits'],
+    }
+);
+
+export async function fetchVisitsFromSheet(): Promise<Visit[]> {
+    return getCachedVisits();
+}
+
 
 export async function getVisitById(visitId: string): Promise<Visit | null> {
     const visits = await fetchVisitsFromSheet();
@@ -265,6 +283,7 @@ export async function updateVisitRow(visit: Visit) {
             },
         });
 
+        revalidateTag('visits', { expire: 0 });
         return { success: true };
     } catch (error) {
         console.error("Error updating visit row:", error);
@@ -325,6 +344,7 @@ export async function deleteVisitRow(visitId: string) {
             }
         });
 
+        revalidateTag('visits', { expire: 0 });
         return { success: true };
     } catch (error) {
         console.error("Error deleting visit row:", error);
@@ -367,6 +387,7 @@ export async function updateVisitAreaCode(visitId: string, newAreaCode: string) 
             }
         });
 
+        revalidateTag('visits', { expire: 0 });
         return { success: true };
     } catch (error) {
         console.error("Error updating Area Code:", error);
