@@ -10,8 +10,9 @@ import { QuickActionGrid } from "@/components/QuickActionGrid";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { QUICK_ACTIONS, Visit, CustomerStats } from "@/types";
 import { saveVisit, getVisits } from "@/lib/storage";
-import { ChevronLeft, Save, ShoppingCart, User, MapPin, Trash2, AlertCircle } from "lucide-react";
+import { ChevronLeft, Save, ShoppingCart, User, MapPin, Trash2, AlertCircle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import FollowUpCard from "@/components/FollowUpCard";
 import { useUser } from "@/app/contexts/UserContext";
 import { getCustomerStatsAction, getVisitByIdAction, updateVisitAction, deleteVisitAction } from "@/app/actions";
 import { format } from "date-fns";
@@ -34,6 +35,7 @@ function NewVisitContent() {
     const editId = searchParams.get('id');
 
     const [loading, setLoading] = useState(false);
+    const [isSubmitted, setIsSubmitted] = useState(false);
     const { user } = useUser();
 
     // Data for Edit Mode
@@ -238,7 +240,7 @@ function NewVisitContent() {
             if (isEditMode) {
                 router.back();
             } else {
-                router.push("/");
+                setIsSubmitted(true);
             }
         } catch (err) {
             console.error(err);
@@ -270,6 +272,37 @@ function NewVisitContent() {
             setLoading(false);
         }
     };
+
+    if (isSubmitted) {
+        return (
+            <div className="space-y-6 pb-20 max-w-md mx-auto py-8 animate-in fade-in duration-300">
+                <div className="text-center space-y-3">
+                    <div className="inline-flex p-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-full shadow-inner">
+                        <CheckCircle2 size={40} className="animate-bounce text-emerald-500 dark:text-emerald-400" />
+                    </div>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Visit Completed!</h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        The visit report for <span className="font-semibold text-slate-800 dark:text-slate-200">{formData.pharmacyName}</span> was successfully logged.
+                    </p>
+                </div>
+
+                {/* Follow up card */}
+                <FollowUpCard 
+                    pharmacyName={formData.pharmacyName || ""} 
+                    username={user?.name || "Admin"} 
+                />
+
+                <div className="pt-4 text-center">
+                    <Button 
+                        onClick={() => router.push("/")} 
+                        className="w-full py-6 text-base bg-slate-950 text-white dark:bg-slate-50 dark:text-slate-950 hover:opacity-90 rounded-xl"
+                    >
+                        Back to Dashboard
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 pb-20">
