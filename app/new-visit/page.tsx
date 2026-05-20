@@ -12,7 +12,7 @@ import { QUICK_ACTIONS, Visit, CustomerStats } from "@/types";
 import { saveVisit, getVisits } from "@/lib/storage";
 import { ChevronLeft, Save, ShoppingCart, User, MapPin, Trash2, AlertCircle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-import FollowUpCard from "@/components/FollowUpCard";
+import FollowUpCard, { FollowUpData } from "@/components/FollowUpCard";
 import { useUser } from "@/app/contexts/UserContext";
 import { getCustomerStatsAction, getVisitByIdAction, updateVisitAction, deleteVisitAction } from "@/app/actions";
 import { format } from "date-fns";
@@ -36,6 +36,12 @@ function NewVisitContent() {
 
     const [loading, setLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [followUp, setFollowUp] = useState<FollowUpData>({
+        required: null,
+        actionType: null,
+        subject: '',
+        timeframe: null,
+    });
     const { user } = useUser();
 
     // Data for Edit Mode
@@ -234,6 +240,30 @@ function NewVisitContent() {
                 if (!result.success && result.code !== 'NO_CREDENTIALS') {
                     alert(`Saved locally, but Cloud upload failed: ${result.error}`);
                 }
+
+                // Unified Calendar Follow-Up Dispatch
+                if (followUp.required && followUp.actionType && followUp.subject && followUp.timeframe) {
+                    try {
+                        const { sendFollowUpAction } = await import('@/lib/actions/followup');
+                        const TIMEFRAME_MAP = {
+                            '1 Day': 1,
+                            '3 Days': 3,
+                            '7 Days': 7,
+                            '30 Days': 30,
+                        };
+                        const timeframeDays = TIMEFRAME_MAP[followUp.timeframe];
+                        await sendFollowUpAction({
+                            pharmacyName: visitData.pharmacyName,
+                            actionType: followUp.actionType,
+                            subject: followUp.subject,
+                            timeframeDays,
+                            username: user?.name || 'Admin',
+                        });
+                    } catch (err) {
+                        // Crucial: Safeguard visit save by catching email delivery failures gracefully
+                        console.error('Unified Follow-Up SMTP dispatch error:', err);
+                    }
+                }
             }
 
             // Redirect back
@@ -286,11 +316,7 @@ function NewVisitContent() {
                     </p>
                 </div>
 
-                {/* Follow up card */}
-                <FollowUpCard 
-                    pharmacyName={formData.pharmacyName || ""} 
-                    username={user?.name || "Admin"} 
-                />
+
 
                 <div className="pt-4 text-center">
                     <Button 
@@ -503,6 +529,15 @@ function NewVisitContent() {
                         <PhotoUpload currentPhotos={formData.photoUrls || []} onPhotosChange={(urls) => setFormData({ ...formData, photoUrls: urls.length > 0 ? urls : undefined })} />
                     </CardContent>
                 </Card>
+
+                {/* Follow-Up Calendar Invite Section (Only for New Visits) */}
+                {!isEditMode && (
+                    <FollowUpCard
+                        pharmacyName={formData.pharmacyName || ""}
+                        value={followUp}
+                        onChange={setFollowUp}
+                    />
+                )}
 
                 {/* Notes */}
                 <Card className="border-none shadow-sm">
