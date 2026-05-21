@@ -22,10 +22,12 @@ interface ControlledFollowUpCardProps {
 export default function FollowUpCard({ pharmacyName, value, onChange }: ControlledFollowUpCardProps) {
     // Handle Action Type Selection and Auto-Prefixing
     const handleActionTypeSelect = (type: ActionType) => {
+        const fullSubject = `${type} - ${pharmacyName}`;
+        const truncatedSubject = fullSubject.substring(0, 50);
         onChange({
             ...value,
             actionType: type,
-            subject: `${type} - `,
+            subject: truncatedSubject,
             timeframe: value.timeframe, // Preserve timeframe if already chosen
         });
     };
@@ -117,7 +119,7 @@ export default function FollowUpCard({ pharmacyName, value, onChange }: Controll
                             className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-1.5 border ${
                                 value.required === true
                                     ? 'bg-violet-600 border-violet-600 text-white shadow-md shadow-violet-100 dark:shadow-none'
-                                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                                     : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
                             }`}
                         >
                             <Sparkles size={13} /> Yes, Plan Follow-up
@@ -173,6 +175,7 @@ export default function FollowUpCard({ pharmacyName, value, onChange }: Controll
                                         type="text"
                                         value={value.subject}
                                         onChange={handleSubjectChange}
+                                        maxLength={50}
                                         className="w-full text-xs py-3 px-3.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 text-slate-800 dark:text-slate-200 font-medium"
                                         placeholder={`${value.actionType} - Specify details...`}
                                     />
@@ -181,27 +184,25 @@ export default function FollowUpCard({ pharmacyName, value, onChange }: Controll
                         )}
 
                         {/* Step 4: Timeframe selection */}
-                        {value.actionType && value.subject.trim().length > `${value.actionType} - `.length && (
-                            <div className="space-y-2 animate-in fade-in duration-200">
-                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Step 4: Remind Me In</span>
-                                <div className="grid grid-cols-4 gap-1.5">
-                                    {(['1 Day', '3 Days', '7 Days', '30 Days'] as TimeframeLabel[]).map((label) => (
-                                        <button
-                                            key={label}
-                                            type="button"
-                                            onClick={() => onChange({ ...value, timeframe: label })}
-                                            className={`py-2.5 px-1 rounded-lg text-xs font-bold text-center border transition-all duration-200 ${
-                                                value.timeframe === label
-                                                    ? 'bg-violet-600 border-violet-600 text-white shadow-sm'
-                                                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                                            }`}
-                                        >
-                                            {label}
-                                        </button>
-                                    ))}
-                                </div>
+                        <div className="space-y-2 animate-in fade-in duration-200">
+                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Step 4: Remind Me In</span>
+                            <div className="grid grid-cols-4 gap-1.5">
+                                {(['1 Day', '3 Days', '7 Days', '30 Days'] as TimeframeLabel[]).map((label) => (
+                                    <button
+                                        key={label}
+                                        type="button"
+                                        onClick={() => onChange({ ...value, timeframe: label })}
+                                        className={`py-2.5 px-1 rounded-lg text-xs font-bold text-center border transition-all duration-200 ${
+                                            value.timeframe === label
+                                                ? 'bg-violet-600 border-violet-600 text-white shadow-sm'
+                                                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                        }`}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
                             </div>
-                        )}
+                        </div>
                     </div>
                 )}
             </div>
