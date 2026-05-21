@@ -126,7 +126,7 @@ export async function sendFollowUpAction(data: FollowUpData) {
 
         // Nodemailer secure transport on port 465 (SSL)
         const transporter = nodemailer.createTransport({
-            host: 'smtp.titan.com',
+            host: 'smtp.titan.email',
             port: 465,
             secure: true,
             auth: {
