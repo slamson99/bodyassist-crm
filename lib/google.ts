@@ -221,6 +221,7 @@ const getCachedVisits = unstable_cache(
     ['visits-sheet-data'],
     {
         tags: ['visits'],
+        revalidate: 30,
     }
 );
 
