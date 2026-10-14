@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QuickActionGrid } from "@/components/QuickActionGrid";
 import { PhotoUpload } from "@/components/PhotoUpload";
-import { QUICK_ACTIONS, Visit, CustomerStats } from "@/types";
+import { QUICK_ACTIONS, Visit, CustomerStats, LeadRating } from "@/types";
 import { saveVisit, getVisits } from "@/lib/storage";
 import { ChevronLeft, Save, ShoppingCart, User, MapPin, Trash2, AlertCircle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
@@ -47,6 +47,7 @@ function NewVisitContent() {
     // Data for Edit Mode
     const [isEditMode, setIsEditMode] = useState(false);
     const [originalVisit, setOriginalVisit] = useState<Visit | null>(null);
+    const [initialCustomerRating, setInitialCustomerRating] = useState<LeadRating | undefined>(undefined);
 
     const [formData, setFormData] = useState<Partial<Visit>>({
         pharmacyName: "",
@@ -141,15 +142,30 @@ function NewVisitContent() {
 
     const selectSuggestion = (name: string) => {
         const stat = serverStats.find(s => s.pharmacyName === name);
-        setFormData(prev => ({
-            ...prev,
-            pharmacyName: name,
-            areaCode: stat?.areaCode || prev.areaCode,
-            customerContact: stat?.lastContact || prev.customerContact,
-            bestDays: stat?.bestDays || [],
-            customerComments: stat?.customerComments || prev.customerComments,
-            frequency: stat?.frequency || prev.frequency,
-        }));
+        const hasColdCall = stat?.leadRating && ['Low', 'Medium', 'High'].includes(stat.leadRating);
+
+        if (hasColdCall && stat?.leadRating) {
+            setInitialCustomerRating(stat.leadRating);
+        }
+
+        setFormData(prev => {
+            const currentActions = prev.actions || [];
+            const nextActions = hasColdCall && !currentActions.includes("Cold Call")
+                ? [...currentActions, "Cold Call"]
+                : currentActions;
+
+            return {
+                ...prev,
+                pharmacyName: name,
+                areaCode: stat?.areaCode || prev.areaCode,
+                customerContact: stat?.lastContact || prev.customerContact,
+                bestDays: stat?.bestDays || [],
+                customerComments: stat?.customerComments || prev.customerComments,
+                frequency: stat?.frequency || prev.frequency,
+                actions: nextActions,
+                leadRating: hasColdCall ? stat.leadRating : prev.leadRating,
+            };
+        });
         setShowSuggestions(false);
     };
 
@@ -163,15 +179,56 @@ function NewVisitContent() {
     const handlePharmacyBlur = () => {
         if (!formData.pharmacyName || isEditMode) return; // Don't auto-fill on edit
 
+        const stat = serverStats.find(s => s.pharmacyName.toLowerCase().trim() === formData.pharmacyName?.toLowerCase().trim());
+        if (stat) {
+            const hasColdCall = stat.leadRating && ['Low', 'Medium', 'High'].includes(stat.leadRating);
+            if (hasColdCall && stat.leadRating) {
+                setInitialCustomerRating(stat.leadRating);
+            }
+            setFormData(prev => {
+                const currentActions = prev.actions || [];
+                const nextActions = hasColdCall && !currentActions.includes("Cold Call")
+                    ? [...currentActions, "Cold Call"]
+                    : currentActions;
+
+                return {
+                    ...prev,
+                    areaCode: stat.areaCode || prev.areaCode,
+                    customerContact: stat.lastContact || prev.customerContact,
+                    bestDays: stat.bestDays || prev.bestDays || [],
+                    customerComments: stat.customerComments || prev.customerComments,
+                    frequency: stat.frequency || prev.frequency,
+                    actions: nextActions,
+                    leadRating: hasColdCall && !prev.leadRating ? stat.leadRating : prev.leadRating,
+                };
+            });
+            return;
+        }
+
         const visits = getVisits();
         const sortedVisits = visits
             .filter(v => v.pharmacyName.toLowerCase().trim() === formData.pharmacyName?.toLowerCase().trim())
             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-        if (sortedVisits.length > 0 && sortedVisits[0].customerContact) {
-            if (!formData.customerContact) {
-                setFormData(prev => ({ ...prev, customerContact: sortedVisits[0].customerContact }));
+        if (sortedVisits.length > 0) {
+            const latest = sortedVisits[0];
+            const hasColdCall = latest.leadRating && ['Low', 'Medium', 'High'].includes(latest.leadRating);
+            if (hasColdCall && latest.leadRating) {
+                setInitialCustomerRating(latest.leadRating);
             }
+            setFormData(prev => {
+                const currentActions = prev.actions || [];
+                const nextActions = hasColdCall && !currentActions.includes("Cold Call")
+                    ? [...currentActions, "Cold Call"]
+                    : currentActions;
+
+                return {
+                    ...prev,
+                    customerContact: latest.customerContact || prev.customerContact,
+                    actions: nextActions,
+                    leadRating: hasColdCall && !prev.leadRating ? latest.leadRating : prev.leadRating,
+                };
+            });
         }
     };
 
@@ -485,20 +542,86 @@ function NewVisitContent() {
                 {/* Lead Rating */}
                 {formData.actions?.includes("Cold Call") && (
                     <Card className="border-none shadow-sm animate-in slide-in-from-top-4 fade-in duration-300">
-                        <CardHeader className="pb-3"><CardTitle className="text-lg">Lead Potential</CardTitle></CardHeader>
-                        <CardContent>
+                        <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 space-y-0">
+                            <div>
+                                <CardTitle className="text-base sm:text-lg">Lead Potential</CardTitle>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">If ongoing, leave as is</p>
+                            </div>
+
+                            {/* Customer Won? Quick Toggle */}
+                            <div className="flex items-center gap-1.5 self-start sm:self-auto bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 px-1">Customer Won?</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData(prev => ({
+                                        ...prev,
+                                        leadRating: prev.leadRating === 'Won' ? (initialCustomerRating || 'Medium') : 'Won'
+                                    }))}
+                                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                                        formData.leadRating === 'Won'
+                                            ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-500/20'
+                                            : 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
+                                    }`}
+                                >
+                                    Yes
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData(prev => ({
+                                        ...prev,
+                                        leadRating: prev.leadRating === 'Lost' ? (initialCustomerRating || 'Low') : 'Lost'
+                                    }))}
+                                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                                        formData.leadRating === 'Lost'
+                                            ? 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-500/20'
+                                            : 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 hover:bg-rose-50 dark:hover:bg-rose-950/30'
+                                    }`}
+                                >
+                                    No
+                                </button>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
                             <div className="grid grid-cols-3 gap-3">
                                 {["Low", "Medium", "High"].map((rating) => (
                                     <button
                                         key={rating}
                                         type="button"
                                         onClick={() => setFormData({ ...formData, leadRating: rating as any })}
-                                        className={`py-3 px-4 rounded-xl font-medium text-sm transition-all ${formData.leadRating === rating ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600'}`}
+                                        className={`py-3 px-4 rounded-xl font-medium text-sm transition-all ${
+                                            formData.leadRating === rating
+                                                ? 'bg-blue-600 text-white shadow-md'
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
                                     >
                                         {rating}
                                     </button>
                                 ))}
                             </div>
+                            {formData.leadRating === 'Won' && (
+                                <div className="py-2 px-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center justify-between">
+                                    <span>Outcome selected: <strong>Won</strong></span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData(prev => ({ ...prev, leadRating: initialCustomerRating || 'Medium' }))}
+                                        className="text-[11px] underline hover:text-emerald-900 font-bold"
+                                    >
+                                        Reset to Ongoing
+                                    </button>
+                                </div>
+                            )}
+                            {formData.leadRating === 'Lost' && (
+                                <div className="py-2 px-3 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-rose-800 dark:text-rose-300 text-xs font-semibold flex items-center justify-between">
+                                    <span>Outcome selected: <strong>Lost</strong></span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData(prev => ({ ...prev, leadRating: initialCustomerRating || 'Low' }))}
+                                        className="text-[11px] underline hover:text-rose-900 font-bold"
+                                    >
+                                        Reset to Ongoing
+                                    </button>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 )}

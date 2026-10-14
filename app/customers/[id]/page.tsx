@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Calendar, Clock, MapPin, Phone, User, ShoppingBag, X, Pencil, Check, Loader2, MoreVertical, Edit } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, Phone, User, ShoppingBag, X, Pencil, Check, Loader2, MoreVertical, Edit, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,10 @@ export default function CustomerDetailsPage() {
     const rawId = Array.isArray(params.id) ? params.id[0] : params.id;
     const pharmacyName = rawId ? decodeURIComponent(rawId) : "";
     const [visits, setVisits] = useState<Visit[]>([]);
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [galleryState, setGalleryState] = useState<{
+        photos: string[];
+        index: number;
+    } | null>(null);
     const [stats, setStats] = useState({
         totalVisits: 0,
         lastVisitDate: null as Date | null,
@@ -44,6 +47,30 @@ export default function CustomerDetailsPage() {
     const [isEditingArea, setIsEditingArea] = useState(false);
     const [tempAreaCode, setTempAreaCode] = useState("");
     const [isSavingArea, setIsSavingArea] = useState(false);
+
+    // Keyboard navigation for image gallery
+    useEffect(() => {
+        if (!galleryState) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "ArrowLeft") {
+                setGalleryState(prev => prev && prev.photos.length > 1 ? {
+                    ...prev,
+                    index: (prev.index - 1 + prev.photos.length) % prev.photos.length
+                } : prev);
+            } else if (e.key === "ArrowRight") {
+                setGalleryState(prev => prev && prev.photos.length > 1 ? {
+                    ...prev,
+                    index: (prev.index + 1) % prev.photos.length
+                } : prev);
+            } else if (e.key === "Escape") {
+                setGalleryState(null);
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [galleryState]);
 
     useEffect(() => {
         const loadData = async () => {
@@ -406,8 +433,15 @@ export default function CustomerDetailsPage() {
                                                             View on Drive
                                                         </a>
                                                     ) : (
-                                                        <button
-                                                            onClick={() => setSelectedImage(url)}
+                                                         <button
+                                                            onClick={() => {
+                                                                const viewablePhotos = (visit.photoUrls || []).filter(u => !u.includes("drive.google.com"));
+                                                                const photoIndex = viewablePhotos.indexOf(url);
+                                                                setGalleryState({
+                                                                    photos: viewablePhotos,
+                                                                    index: photoIndex >= 0 ? photoIndex : 0,
+                                                                });
+                                                            }}
                                                             className="inline-block group relative focus:outline-none"
                                                         >
                                                             <img
@@ -429,27 +463,68 @@ export default function CustomerDetailsPage() {
                 </>
             )}
 
-            {/* Image Modal */}
-            {selectedImage && (
+            {/* Image Gallery Modal */}
+            {galleryState && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 transition-opacity backdrop-blur-sm"
-                    onClick={() => setSelectedImage(null)}
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 transition-opacity backdrop-blur-md"
+                    onClick={() => setGalleryState(null)}
                 >
-                    <div className="relative max-w-4xl max-h-[90vh] w-full flex justify-center">
-                        <img
-                            src={selectedImage}
-                            alt="Full Size"
-                            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
-                        />
-                        <button
-                            className="absolute -top-12 right-0 md:top-4 md:right-4 text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedImage(null);
-                            }}
-                        >
-                            <X size={24} />
-                        </button>
+                    <div
+                        className="relative max-w-4xl max-h-[92vh] w-full flex flex-col items-center justify-center"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="relative flex items-center justify-center w-full">
+                            {/* Previous Button */}
+                            {galleryState.photos.length > 1 && (
+                                <button
+                                    className="absolute left-2 md:-left-12 top-1/2 -translate-y-1/2 z-10 text-white bg-black/60 hover:bg-black/90 p-2.5 rounded-full transition-colors backdrop-blur-sm border border-white/10"
+                                    onClick={() => setGalleryState(prev => prev ? {
+                                        ...prev,
+                                        index: (prev.index - 1 + prev.photos.length) % prev.photos.length
+                                    } : null)}
+                                    aria-label="Previous image"
+                                >
+                                    <ChevronLeft size={24} />
+                                </button>
+                            )}
+
+                            <img
+                                src={galleryState.photos[galleryState.index]}
+                                alt={`Visit Photo ${galleryState.index + 1}`}
+                                className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl"
+                            />
+
+                            {/* Next Button */}
+                            {galleryState.photos.length > 1 && (
+                                <button
+                                    className="absolute right-2 md:-right-12 top-1/2 -translate-y-1/2 z-10 text-white bg-black/60 hover:bg-black/90 p-2.5 rounded-full transition-colors backdrop-blur-sm border border-white/10"
+                                    onClick={() => setGalleryState(prev => prev ? {
+                                        ...prev,
+                                        index: (prev.index + 1) % prev.photos.length
+                                    } : null)}
+                                    aria-label="Next image"
+                                >
+                                    <ChevronRight size={24} />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Controls Bar: Counter and Close */}
+                        <div className="flex items-center justify-between w-full mt-3 px-2">
+                            {galleryState.photos.length > 1 ? (
+                                <span className="text-xs font-semibold text-white/90 bg-white/10 px-3 py-1 rounded-full border border-white/10">
+                                    Photo {galleryState.index + 1} of {galleryState.photos.length}
+                                </span>
+                            ) : <div />}
+
+                            <button
+                                className="text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors border border-white/10"
+                                onClick={() => setGalleryState(null)}
+                                aria-label="Close image modal"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

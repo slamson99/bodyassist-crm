@@ -46,14 +46,8 @@ function generateICSString(
     const now = new Date();
     const targetDate = new Date();
     targetDate.setDate(now.getDate() + timeframeDays);
-    
-    // Fix start time to 9:00 AM UTC on the target date
-    targetDate.setUTCHours(9, 0, 0, 0);
-    
-    // End time is 30 minutes later (9:30 AM UTC)
-    const endDate = new Date(targetDate.getTime() + 30 * 60 * 1000);
 
-    const formatICSDate = (date: Date): string => {
+    const formatUTCStamp = (date: Date): string => {
         const year = date.getUTCFullYear();
         const month = String(date.getUTCMonth() + 1).padStart(2, '0');
         const day = String(date.getUTCDate()).padStart(2, '0');
@@ -63,9 +57,14 @@ function generateICSString(
         return `${year}${month}${day}T${hours}${minutes}${seconds}Z`;
     };
 
-    const dtstamp = formatICSDate(now);
-    const dtstart = formatICSDate(targetDate);
-    const dtend = formatICSDate(endDate);
+    // Calculate target date at 10:00 AM - 10:30 AM floating local calendar time
+    const targetYear = targetDate.getFullYear();
+    const targetMonth = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const targetDay = String(targetDate.getDate()).padStart(2, '0');
+
+    const dtstamp = formatUTCStamp(now);
+    const dtstart = `${targetYear}${targetMonth}${targetDay}T100000`;
+    const dtend = `${targetYear}${targetMonth}${targetDay}T103000`;
 
     const escapeText = (str: string): string => {
         return str
@@ -139,7 +138,7 @@ export async function sendFollowUpAction(data: FollowUpData) {
             from: `"BodyAssist Support" <support@bodyassist.com>`,
             to: repEmail,
             subject: `Action Required: ${data.subject} - ${data.pharmacyName}`,
-            text: `Hi ${data.username},\n\nYou have set a follow-up calendar reminder for ${data.pharmacyName}.\n\nReminder Specifications:\n- Action Required: ${data.actionType}\n- Subject Detail: ${data.subject}\n- Target Date: ${data.timeframeDays} days from now (approx. ${new Date(Date.now() + data.timeframeDays * 24 * 60 * 60 * 1000).toDateString()})\n\nDouble-click the attached follow-up.ics file to save this meeting to your native Google, Apple, or Outlook calendar.\n\nBest regards,\nBodyAssist CRM Team`,
+            text: `Hi ${data.username},\n\nYou have set a follow-up calendar reminder for ${data.pharmacyName}.\n\nReminder Specifications:\n- Action Required: ${data.actionType}\n- Subject Detail: ${data.subject}\n- Target Date: ${data.timeframeDays} days from now (approx. ${new Date(Date.now() + data.timeframeDays * 24 * 60 * 60 * 1000).toDateString()} at 10:00 AM)\n\nDouble-click the attached follow-up.ics file to save this meeting to your native Google, Apple, or Outlook calendar.\n\nBest regards,\nBodyAssist CRM Team`,
             attachments: [
                 {
                     filename: 'follow-up.ics',

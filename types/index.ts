@@ -1,3 +1,5 @@
+export type LeadRating = 'Low' | 'Medium' | 'High' | 'Won' | 'Lost';
+
 export interface Visit {
     id: string;
     pharmacyName: string;
@@ -8,7 +10,7 @@ export interface Visit {
     orderDetails?: string;
     photoUrls?: string[]; // Array of URLs or dataURLs
     notes: string;
-    leadRating?: 'Low' | 'Medium' | 'High';
+    leadRating?: LeadRating;
     areaCode?: string;
     user?: string;
     bestDays?: string[];
@@ -34,9 +36,10 @@ export interface CustomerStats {
     lastContact: string;
     lastUser?: string;
     topActions: string[];
-    leadRating?: 'Low' | 'Medium' | 'High';
+    leadRating?: LeadRating;
     areaCode?: string;
     bestDays?: string[];
     customerComments?: string;
     frequency?: '4w' | '6w' | '8w';
 }
+

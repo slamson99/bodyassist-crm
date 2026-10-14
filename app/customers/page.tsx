@@ -21,7 +21,8 @@ export default function CustomersPage() {
     const [areaSearch, setAreaSearch] = useState("");
     const [userFilter, setUserFilter] = useState("");
     const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>("newest");
-    const [filterRating, setFilterRating] = useState<'All' | 'Low' | 'Medium' | 'High'>("All");
+    const [filterRating, setFilterRating] = useState<'All' | 'Low' | 'Medium' | 'High' | 'Won' | 'Lost'>("All");
+    const [isRestored, setIsRestored] = useState(false);
 
     // Data Stats
     const [stats, setStats] = useState<CustomerStats[]>([]);
@@ -30,6 +31,61 @@ export default function CustomersPage() {
     const [availableUsers, setAvailableUsers] = useState<string[]>([]);
     const [showUserSuggestions, setShowUserSuggestions] = useState(false);
 
+    // Restore state from sessionStorage on mount
+    useEffect(() => {
+        try {
+            const savedState = sessionStorage.getItem('bodyassist_customers_filter_state');
+            if (savedState) {
+                const parsed = JSON.parse(savedState);
+                if (parsed.searchTerm !== undefined) setSearchTerm(parsed.searchTerm);
+                if (parsed.areaSearch !== undefined) setAreaSearch(parsed.areaSearch);
+                if (parsed.userFilter !== undefined) setUserFilter(parsed.userFilter);
+                if (parsed.sortOrder !== undefined) setSortOrder(parsed.sortOrder);
+                if (parsed.filterRating !== undefined) setFilterRating(parsed.filterRating);
+            }
+        } catch (e) {
+            console.error("Error reading saved customer filters", e);
+        }
+        setIsRestored(true);
+    }, []);
+
+    // Save filters to sessionStorage when changed
+    useEffect(() => {
+        if (!isRestored) return;
+        try {
+            const current = {
+                searchTerm,
+                areaSearch,
+                userFilter,
+                sortOrder,
+                filterRating,
+                scrollY: window.scrollY,
+            };
+            sessionStorage.setItem('bodyassist_customers_filter_state', JSON.stringify(current));
+        } catch (e) {
+            // ignore
+        }
+    }, [searchTerm, areaSearch, userFilter, sortOrder, filterRating, isRestored]);
+
+    // Restore scroll position after stats render
+    useEffect(() => {
+        if (stats.length > 0 && isRestored) {
+            try {
+                const saved = sessionStorage.getItem('bodyassist_customers_filter_state');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.scrollY) {
+                        requestAnimationFrame(() => {
+                            window.scrollTo({ top: parsed.scrollY, behavior: 'instant' });
+                        });
+                    }
+                }
+            } catch (e) {
+                // ignore
+            }
+        }
+    }, [stats, isRestored]);
+
     useEffect(() => {
         const fetchStats = async () => {
             try {
@@ -37,46 +93,11 @@ export default function CustomersPage() {
                 const { getCustomerStatsAction } = await import('@/app/actions');
 
                 // Pass user.areaCode and current userFilter
-                // Note: userFilter is debated. If I type "Sam", I want to filter. 
-                // But debouncing on server request is needed if I type fast.
-                // For now, let's assume valid filter or empty.
                 const { success, data, users } = await getCustomerStatsAction(user?.areaCode || "", userFilter);
 
                 let currentStats = success && data ? data : [];
                 if (users) {
                     setAvailableUsers(users.sort());
-                }
-
-                // 2. Merge Local Visits (Offline/Unsynced)
-                const localVisits = getVisits();
-                // Filter local visits that are NOT in the stats (by ID? No, stats don't have IDs).
-                // We rely on "Cloud is Truth", but local might be newer.
-                // Actually, duplicate check is hard with stats vs raw.
-                // Simplified approach: Re-calculate stats for Local visits and merge?
-                // Better: Just process local visits and "upsert" into stats.
-
-                if (localVisits.length > 0) {
-                    // Check if local visits are already in cloud (by comparing counts or timestamps?)
-                    // Hard. Let's just assume local needs to be added if it's "New" (no ID or not in cloud list?).
-                    // But we don't have cloud list anymore!
-                    // We only have stats.
-                    // Logic: If I just added a visit locally, it's NOT in cloud stats yet.
-                    // So I should ADD it.
-                    // How to distinguish "Synced Local" from "Unsynced Local"?
-                    // Usually I clear local storage after sync? 
-                    // The current app *keeps* local storage as cache.
-                    // But `getVisitsFromCloud` was doing the deduping.
-                    // Ideally, we shouldn't keep synced visits in localStorage forever if we rely on server stats.
-                    // New strategy: trust Server Stats. Only add visits that have `!visit.id` (if we used temp IDs) 
-                    // OR visits that are explicitly marked "unsynced".
-                    // Current system: `saveVisit` saves everything.
-                    // Warning: merging local visits blindly will double-count synced visits.
-                    // COMPROMISE: For "Optimization Phase", we accept that "Offline/Local-only" visits might not show up 
-                    // in the *Analysis* view immediately until synced, OR we just show Server Stats.
-                    // Given "Performance" found 3000 visits, the local storage is probably full of synced visits.
-                    // Ignoring local storage for Analysis is safest to prevent double counting without an ID list.
-                    // New Visits appear in "Recent Visits" (Dashboard) anyway.
-                    // Decision: Show ONLY Server Stats for Analysis. (Fastest, safest).
                 }
 
                 setStats(currentStats);
@@ -88,6 +109,21 @@ export default function CustomersPage() {
 
         fetchStats();
     }, [user, userFilter]); // Re-fetch when user/filter changes
+
+    const saveScrollPosition = () => {
+        try {
+            sessionStorage.setItem('bodyassist_customers_filter_state', JSON.stringify({
+                searchTerm,
+                areaSearch,
+                userFilter,
+                sortOrder,
+                filterRating,
+                scrollY: window.scrollY,
+            }));
+        } catch (e) {
+            // ignore
+        }
+    };
 
 
     const filteredStats = stats.filter(s => {
@@ -174,19 +210,23 @@ export default function CustomersPage() {
 
                 <div className="flex gap-2 justify-between items-center">
                     <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide flex-1">
-                        {['All', 'High', 'Medium', 'Low'].map((rating) => (
+                        {(['All', 'High', 'Medium', 'Low', 'Won', 'Lost'] as const).map((rating) => (
                             <button
                                 key={rating}
-                                onClick={() => setFilterRating(rating as any)}
+                                onClick={() => setFilterRating(rating)}
                                 className={`
-                                    px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border transition-colors
+                                    px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border transition-colors
                                     ${filterRating === rating
-                                        ? 'bg-slate-800 text-white border-slate-800'
+                                        ? rating === 'Won'
+                                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                                            : rating === 'Lost'
+                                                ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
+                                                : 'bg-slate-800 text-white border-slate-800 shadow-sm'
                                         : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                                     }
                                 `}
                             >
-                                {rating === 'All' ? 'All Leads' : `${rating} Potential`}
+                                {rating === 'All' ? 'All Leads' : rating === 'Won' ? 'Won' : rating === 'Lost' ? 'Lost' : `${rating} Potential`}
                             </button>
                         ))}
                     </div>
@@ -209,7 +249,11 @@ export default function CustomersPage() {
                 ) : (
                     <div className="grid gap-4">
                         {filteredStats.map((stat) => (
-                            <Link href={`/customers/${encodeURIComponent(stat.pharmacyName)}`} key={stat.pharmacyName}>
+                            <Link
+                                href={`/customers/${encodeURIComponent(stat.pharmacyName)}`}
+                                key={stat.pharmacyName}
+                                onClick={saveScrollPosition}
+                            >
                                 <Card className="border-none shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
                                     <CardContent className="p-5">
                                         <div className="flex justify-between items-start mb-3">
@@ -224,11 +268,13 @@ export default function CustomersPage() {
                                                 <div className="inline-block mb-1">
                                                     <span className={`
                                                         text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide
-                                                        ${stat.leadRating === 'High' ? 'bg-green-100 text-green-700' :
+                                                        ${stat.leadRating === 'Won' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                                                            stat.leadRating === 'Lost' ? 'bg-rose-100 text-rose-800 border border-rose-200' :
+                                                            stat.leadRating === 'High' ? 'bg-green-100 text-green-700' :
                                                             stat.leadRating === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
-                                                                'bg-slate-100 text-slate-600'}
+                                                            'bg-slate-100 text-slate-600'}
                                                     `}>
-                                                        {stat.leadRating} Potential
+                                                        {stat.leadRating === 'Won' ? 'Won' : stat.leadRating === 'Lost' ? 'Lost' : `${stat.leadRating} Potential`}
                                                     </span>
                                                 </div>
                                             )}

@@ -16,6 +16,7 @@ export default function Home() {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [groupedPending, setGroupedPending] = useState<Record<string, { urgent: CustomerStats[], warning: CustomerStats[], soon: CustomerStats[] }>>({});
   const [hasPending, setHasPending] = useState(false);
+  const [showAllPendingAreas, setShowAllPendingAreas] = useState(false);
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -80,7 +81,18 @@ export default function Home() {
   const renderPendingVisits = () => {
     if (!hasPending) return null;
 
-    const areas = Object.keys(groupedPending).sort();
+    // Filter to only areas that actually have pending visits
+    const activeAreas = Object.keys(groupedPending)
+      .filter(area => {
+        const { urgent, warning, soon } = groupedPending[area];
+        return (urgent.length + warning.length + soon.length) > 0;
+      })
+      .sort();
+
+    if (activeAreas.length === 0) return null;
+
+    const visibleAreas = showAllPendingAreas ? activeAreas : activeAreas.slice(0, 2);
+    const hasMoreAreas = activeAreas.length > 2;
 
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -88,10 +100,20 @@ export default function Home() {
           <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             Pending Visits
           </h3>
+          {hasMoreAreas && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAllPendingAreas(prev => !prev)}
+              className="text-xs h-8 rounded-lg font-semibold text-primary border-primary/20 hover:bg-primary/5"
+            >
+              {showAllPendingAreas ? "Show Less" : `See All (${activeAreas.length} Areas)`}
+            </Button>
+          )}
         </div>
 
         <div className="space-y-6">
-          {areas.map(area => {
+          {visibleAreas.map(area => {
             const { urgent, warning, soon } = groupedPending[area];
             const totalForArea = urgent.length + warning.length + soon.length;
             if (totalForArea === 0) return null;
@@ -178,6 +200,18 @@ export default function Home() {
             );
           })}
         </div>
+
+        {hasMoreAreas && !showAllPendingAreas && (
+          <div className="text-center pt-1">
+            <Button
+              variant="outline"
+              onClick={() => setShowAllPendingAreas(true)}
+              className="w-full py-5 text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 border-slate-200 rounded-xl shadow-sm"
+            >
+              See All Pending Areas ({activeAreas.length - 2} more)
+            </Button>
+          </div>
+        )}
       </div>
     );
   };
